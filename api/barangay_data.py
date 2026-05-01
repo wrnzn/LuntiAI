@@ -400,7 +400,7 @@ CROP_ECONOMICS = {
         "source": "PCARRD Mango Production Guide, DA Region XI 2023",
     },
     "Papaya": {
-        "production_cost_php": 45000,   # PHP/ha/year
+        "production_cost_php": 150000,   # PHP/ha/year (accounting for Ringspot disease management)
         "avg_yield_kg_ha": 30000,        # kg/ha/year (high-yielding variety)
         "farmgate_price_php_kg": 12,     # PHP/kg (Tagum market, 2024)
         "cropping_seasons_per_year": 1,
@@ -418,27 +418,27 @@ CROP_ECONOMICS = {
         "source": "PhilRootcrops VSU, DA Region XI Root Crops Program 2023",
     },
     "Sweet Potato": {
-        "production_cost_php": 22000,   # PHP/ha/season
-        "avg_yield_kg_ha": 12000,        # kg/ha (UPLB data)
-        "farmgate_price_php_kg": 18,     # PHP/kg (Tagum market, 2024)
+        "production_cost_php": 45000,   # PHP/ha/season (incl. labor for ridge prep and harvesting)
+        "avg_yield_kg_ha": 10000,        # kg/ha (UPLB data, adjusted for typical upland conditions)
+        "farmgate_price_php_kg": 15,     # PHP/kg (Tagum market, 2024 average)
         "cropping_seasons_per_year": 2,
         "harvest_months": 4,
         "notes": "Orange-flesh variety for food security + commercial sale",
         "source": "UPLB Sweet Potato Research, DA Region XI 2023",
     },
     "Eggplant": {
-        "production_cost_php": 80000,   # PHP/ha/season (intensive vegetable)
-        "avg_yield_kg_ha": 25000,        # kg/ha (PCAARRD, irrigated)
-        "farmgate_price_php_kg": 35,     # PHP/kg (Tagum/Davao del Norte, 2024)
+        "production_cost_php": 120000,  # PHP/ha/season (intensive vegetable, high pesticide/labor)
+        "avg_yield_kg_ha": 18000,        # kg/ha (PCAARRD, irrigated but accounting for borer losses)
+        "farmgate_price_php_kg": 25,     # PHP/kg (Tagum/Davao del Norte, 2024)
         "cropping_seasons_per_year": 2,
         "harvest_months": 4,
         "notes": "High-value vegetable; Tagum markets have strong demand",
         "source": "PCAARRD Eggplant Production Guide, DA Region XI 2023",
     },
     "Tomato": {
-        "production_cost_php": 90000,   # PHP/ha/season
-        "avg_yield_kg_ha": 20000,        # kg/ha (DA irrigated farm avg)
-        "farmgate_price_php_kg": 40,     # PHP/kg (Tagum market avg, 2024 — volatile)
+        "production_cost_php": 140000,  # PHP/ha/season (trellising, pest control, labor)
+        "avg_yield_kg_ha": 15000,        # kg/ha (DA irrigated farm avg, adjusted for disease pressure)
+        "farmgate_price_php_kg": 30,     # PHP/kg (Tagum market avg, 2024 — highly volatile)
         "cropping_seasons_per_year": 2,
         "harvest_months": 3,
         "notes": "Price highly volatile (₱15–80/kg); peak season = low price",

@@ -134,7 +134,7 @@ class PredictionResponse(BaseModel):
 # =============================================================================
 
 # OpenWeatherMap API key
-WEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
+WEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "YOUR_API_KEY_HERE")
 
 
 @app.post("/predict", response_model=PredictionResponse)

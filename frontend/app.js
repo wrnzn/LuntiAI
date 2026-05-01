@@ -876,10 +876,10 @@ function renderEconChart(cost, profit, gross) {
     econChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Per Hectare Estimates'],
+            labels: [t('econ_chart_title')],
             datasets: [
                 {
-                    label: 'Production Cost',
+                    label: t('econ_cost'),
                     data: [cost],
                     backgroundColor: 'rgba(245, 158, 11, 0.7)',
                     borderColor: 'rgba(245, 158, 11, 1)',
@@ -887,7 +887,7 @@ function renderEconChart(cost, profit, gross) {
                     borderRadius: 4
                 },
                 {
-                    label: 'Net Profit',
+                    label: t('econ_profit'),
                     data: [profit],
                     backgroundColor: 'rgba(34, 197, 94, 0.7)',
                     borderColor: 'rgba(34, 197, 94, 1)',

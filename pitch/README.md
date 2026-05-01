@@ -73,10 +73,10 @@ decisions.
    - **Explainable AI (SHAP) Insights** showing why the crop was chosen
    - **Top 5 alternative crops** ranked by suitability
    - **Fertilizer advice** with specific products available at Tagum agrivet stores
-   - **Realistic ROI Calculator** based on localized production costs
+   - **DA-CRA Compliant ROI Calculator** utilizing structured Region XI production costs and up-to-date labor rates (Wage Order RB XI-24 at ₱515/day)
 
 ### Key Innovation
-Unlike generic crop calculators, LuntiAI **eliminates manual data entry**.
+Unlike generic crop calculators that hallucinate exaggerated returns, LuntiAI **eliminates manual data entry** and enforces strict **20-60% real-world ROI guardrails**.
 A farmer who doesn't know their exact soil pH or annual rainfall can still get
 an accurate recommendation — we do the heavy lifting by pre-mapping 23 barangays
 and integrating live weather APIs.
@@ -89,6 +89,7 @@ and integrating live weather APIs.
 | Dataset | 120,000 rows, 12 crops, 8 features (incl. OM) — synthetic data |
 | Backend | FastAPI (Python) — RESTful API with Swagger documentation |
 | Frontend | HTML/CSS/JavaScript — Dark-mode, responsive, localized (EN/TL/CEB) |
+| Economics | DA-CRA Compliance Engine (TCP structured per DA Region XI standards) |
 | Weather | OpenWeatherMap API — Real-time temperature, humidity, conditions |
 | Data Sources | BSWM, PAGASA, PhilRice, DA Technoguides, PCA |
 
@@ -123,12 +124,13 @@ and integrating live weather APIs.
 2. Fertilizer prices are rising — needs to optimize application
 3. Climate change is making traditional planting calendars unreliable
 4. Most agriculture apps are in English and designed for commercial farms
+5. Existing calculators predict unrealistic ROIs because they lack local calibration
 
 ### What Mang Kiko Needs
 - A **simple, one-step tool** that doesn't require technical knowledge
 - **Tagalog/Bisaya-friendly** interface (already supported!)
 - Recommendations that mention **specific products** he can buy locally
-- Data he can **show to his cooperative** to justify crop decisions
+- Highly accurate financial estimates based on the **actual ₱515 minimum wage**
 
 ---
 
@@ -194,6 +196,7 @@ and integrating live weather APIs.
 | Cost to farmer | Free / ₱500/yr | Free | ₱500–2,000/test |
 | Speed | Instant | Instant | 2–4 weeks |
 | Localization | 23 Tagum barangays | Generic/Global | N/A |
+| Financials | DA Region XI CRA Compliant | Hallucinated/Exaggerated | N/A |
 | Weather integration | Live API | None | None |
 | Fertilizer advice | Local brands & stores | Generic | Lab report only |
 | Accessibility | Mobile web, 1-step | Complex forms | Physical lab visit |

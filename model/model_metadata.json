@@ -1,0 +1,44 @@
+{
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 200,
+  "accuracy": 0.8562,
+  "n_classes": 12,
+  "classes": [
+    "Banana",
+    "Cacao",
+    "Cassava",
+    "Coconut",
+    "Corn",
+    "Durian",
+    "Eggplant",
+    "Mango",
+    "Papaya",
+    "Rice",
+    "Sweet Potato",
+    "Tomato"
+  ],
+  "features": [
+    "N",
+    "P",
+    "K",
+    "temperature",
+    "humidity",
+    "ph",
+    "rainfall",
+    "OM"
+  ],
+  "feature_importance": {
+    "K": 0.245,
+    "N": 0.1693,
+    "rainfall": 0.1652,
+    "humidity": 0.1046,
+    "P": 0.0969,
+    "OM": 0.0959,
+    "temperature": 0.0657,
+    "ph": 0.0574
+  },
+  "training_data": "data/philippine_crop_dataset.csv",
+  "training_samples": 96000,
+  "test_samples": 24000,
+  "trained_at": "2026-05-01 10:32:43"
+}

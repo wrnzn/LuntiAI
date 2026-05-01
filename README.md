@@ -17,7 +17,7 @@ soil profile and live weather conditions.
 - **12 Philippine Crops** — Rice, Banana, Cacao, Coconut, Durian, Corn, Mango, Papaya, Cassava, Sweet Potato, Eggplant, Tomato
 - **Explainable AI (SHAP)** — Understand *why* the AI chose a crop with positive/negative impact factors
 - **UI Localization** — Supports English, Tagalog, and Bisaya
-- **Fertilizer Advice & ROI** — Localized product recommendations and realistic Business ROI Calculator
+- **DA-CRA Compliant ROI** — Strictly calibrated to DA Region XI Cost and Return Analysis standards, featuring structured TCP modeling and Wage Order RB XI-24 (₱515/day) adherence
 - **Confidence Scoring** — Top-5 crop predictions with probability chart
 
 ---

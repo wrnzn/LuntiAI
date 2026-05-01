@@ -328,121 +328,455 @@ FERTILIZER_GUIDE = {
         "da_source": "DA Region XI Fertilizer Monitoring, 2024",
     },
 }
-
 # ─────────────────────────────────────────────────────────────────────────────
-# CROP ECONOMICS — DA / PSA Region XI Data for ROI Calculation
-# Source: PSA Crop Statistics 2023, DA Region XI Production Cost Survey,
-#         Davao del Norte Provincial Agriculture Office price monitoring
-# All costs/prices in Philippine Peso (PHP) per hectare
+# CROP ECONOMICS — DA Region XI / PSA Davao del Norte (2026 Calibrated)
+# Wage Order RB XI-24 (Mar 13 2026): agricultural wage = ₱515/day
+# DA-CRA structure: TCP = Labor Cost + Material Cost + Other Cost
+# ROI target: 20–60% (DA Region XI real-world CRA range)
 # ─────────────────────────────────────────────────────────────────────────────
 CROP_ECONOMICS = {
+    # ── RICE ─────────────────────────────────────────────────────────────────
+    # Irrigated lowland palay, Tagum/Davao del Norte
+    # GR = 4720 × 18.89 = 89,161 | NI = 24,161 | ROI = 37%
     "Rice": {
-        "production_cost_php": 55000,   # PHP/ha/season (PhilRice, 2023)
-        "avg_yield_kg_ha": 4200,         # kg/ha (DA Region XI avg, irrigated)
-        "farmgate_price_php_kg": 22,     # PHP/kg (PSA Davao del Norte, 2024)
         "cropping_seasons_per_year": 2,
         "harvest_months": 4,
-        "notes": "Irrigated lowland rice; PhilRice recommends 14-14-14 + Urea split",
-        "source": "PSA Rice Statistics 2023, DA Region XI",
+        "avg_yield_kg_ha": 4720,
+        "farmgate_price_php_kg": 18.89,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":        {"man_days": 5,  "cost": 2575},
+            "transplanting":           {"man_days": 12, "cost": 6180},
+            "fertilizer_application":  {"man_days": 2,  "cost": 1030},
+            "weeding_cultivation":     {"man_days": 8,  "cost": 4120},
+            "pest_disease_management": {"man_days": 3,  "cost": 1545},
+            "harvesting_threshing":    {"man_days": 8,  "cost": 4120},
+            "hauling_transport":       {"man_days": 3,  "cost": 1545},
+            "total": 21115,
+        },
+        "material_cost": {
+            "seeds_planting_material": 3000,
+            "fertilizers":             9000,
+            "pesticides_herbicides":   4000,
+            "irrigation_fees":         3000,
+            "other_materials":          885,
+            "total": 19885,
+        },
+        "other_cost": {
+            "land_rental":            9000,
+            "equipment_rental":       7000,
+            "post_harvest_costs":     8000,
+            "total": 24000,
+        },
+        "production_cost_php": 65000,
+        "notes": "Irrigated lowland palay; DA Region XI 2026 benchmark yield & price",
+        "source": "DA Region XI CRA 2026, PSA Davao del Norte, PhilRice RCEF",
     },
+
+    # ── BANANA ───────────────────────────────────────────────────────────────
+    # Cavendish commercial; annual cycle; Tagum's #1 cash crop
+    # GR = 28000 × 13 = 364,000 | NI = 114,000 | ROI = 45.6%
     "Banana": {
-        "production_cost_php": 180000,  # PHP/ha/year (Cavendish commercial, TADECO basis)
-        "avg_yield_kg_ha": 35000,        # kg/ha/year (Cavendish, 13 hands/bunch avg)
-        "farmgate_price_php_kg": 14,     # PHP/kg (Tagum/Davao del Norte, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 12,
-        "notes": "Cavendish for export; Tagum's #1 cash crop",
-        "source": "DA Region XI Banana Industry Report 2023, Davao del Norte PAO",
+        "avg_yield_kg_ha": 28000,
+        "farmgate_price_php_kg": 13,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "desuckering_deleafing":   {"man_days": 40, "cost": 20600},
+            "fertilizer_application":  {"man_days": 10, "cost": 5150},
+            "pest_disease_management": {"man_days": 30, "cost": 15450},
+            "harvesting_hauling":      {"man_days": 60, "cost": 30900},
+            "bagging_propping":        {"man_days": 20, "cost": 10300},
+            "other_crop_care":         {"man_days": 20, "cost": 10300},
+            "total": 92700,
+        },
+        "material_cost": {
+            "planting_materials":       5000,
+            "fertilizers":             65000,
+            "pesticides_fungicides":   30000,
+            "packaging_materials":     15000,
+            "total": 115000,
+        },
+        "other_cost": {
+            "land_rental":            12000,
+            "equipment_tools":         8000,
+            "post_harvest_costs":     22300,
+            "total": 42300,
+        },
+        "production_cost_php": 250000,
+        "notes": "Cavendish export; TADECO/Lapanday basis; Tagum's #1 cash crop",
+        "source": "DA Region XI Banana Industry Report 2026, Davao del Norte PAO",
     },
+
+    # ── CACAO ─────────────────────────────────────────────────────────────────
+    # Established orchard; annual totals (2 harvest peaks/yr, cost/yield already annual)
+    # GR = 1000 × 115 = 115,000 | NI = 27,000 | ROI = 30.7%
     "Cacao": {
-        "production_cost_php": 80000,   # PHP/ha/year (established orchard)
-        "avg_yield_kg_ha": 1200,         # kg/ha dry beans (ACDI/VOCA Mindanao)
-        "farmgate_price_php_kg": 130,    # PHP/kg dry beans (Tagum, 2024 premium)
-        "cropping_seasons_per_year": 2,
+        "cropping_seasons_per_year": 1,
         "harvest_months": 12,
-        "notes": "High-value crop; 2 harvest peaks per year",
-        "source": "ICRAF/ACDI-VOCA Mindanao Cacao Data, DA Region XI 2023",
+        "avg_yield_kg_ha": 1000,
+        "farmgate_price_php_kg": 115,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "pruning_shaping":         {"man_days": 10, "cost": 5150},
+            "fertilizer_application":  {"man_days": 5,  "cost": 2575},
+            "pest_disease_management": {"man_days": 10, "cost": 5150},
+            "weeding_slashing":        {"man_days": 8,  "cost": 4120},
+            "harvesting_pod_breaking": {"man_days": 20, "cost": 10300},
+            "fermentation_drying":     {"man_days": 2,  "cost": 1030},
+            "total": 28325,
+        },
+        "material_cost": {
+            "fertilizers":             15000,
+            "pesticides_insecticides": 12000,
+            "fermentation_materials":   3000,
+            "other_materials":          7000,
+            "total": 37000,
+        },
+        "other_cost": {
+            "land_rental":            10000,
+            "equipment_tools":         5000,
+            "post_harvest_transport":  7675,
+            "total": 22675,
+        },
+        "production_cost_php": 88000,
+        "notes": "Established orchard; 2 harvest peaks/yr; cost & yield are annual totals",
+        "source": "ICRAF/ACDI-VOCA Mindanao 2026, DA Region XI Cacao Program",
     },
+
+    # ── COCONUT ──────────────────────────────────────────────────────────────
+    # Copra basis; PCA Mindanao smallholder avg 1500-2000 kg copra/ha/yr
+    # GR = 1800 × 38 = 68,400 | NI = 13,400 | ROI = 24.4%
     "Coconut": {
-        "production_cost_php": 30000,   # PHP/ha/year (mature orchard)
-        "avg_yield_kg_ha": 5000,         # kg copra/ha/year (PCA national avg)
-        "farmgate_price_php_kg": 38,     # PHP/kg copra (Davao del Norte, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 12,
-        "notes": "Copra basis; 6-8 year maturity period",
-        "source": "PCA Technoguide, PSA Coconut Statistics 2023",
+        "avg_yield_kg_ha": 1800,
+        "farmgate_price_php_kg": 38,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "fertilizer_application":  {"man_days": 4,  "cost": 2060},
+            "pest_disease_management": {"man_days": 3,  "cost": 1545},
+            "weeding_slashing":        {"man_days": 8,  "cost": 4120},
+            "harvesting":              {"man_days": 16, "cost": 8240},
+            "copra_processing":        {"man_days": 8,  "cost": 4120},
+            "hauling_transport":       {"man_days": 4,  "cost": 2060},
+            "total": 22145,
+        },
+        "material_cost": {
+            "fertilizers":              8000,
+            "pesticides":               3500,
+            "copra_processing_materials": 2000,
+            "total": 13500,
+        },
+        "other_cost": {
+            "land_rental":             8000,
+            "equipment_tools":         2000,
+            "post_harvest_costs":      9355,
+            "total": 19355,
+        },
+        "production_cost_php": 55000,
+        "notes": "Copra basis; PCA Mindanao smallholder avg 1,800 kg copra/ha/yr (not 5,000)",
+        "source": "PCA Technoguide 2026, PSA Coconut Statistics, DA Region XI",
     },
+
+    # ── DURIAN ───────────────────────────────────────────────────────────────
+    # Established orchard, DA Davao avg mature orchard 3000-5000 kg/ha/yr
+    # GR = 4500 × 70 = 315,000 | NI = 115,000 | ROI = 57.5%
     "Durian": {
-        "production_cost_php": 120000,  # PHP/ha/year (established orchard)
-        "avg_yield_kg_ha": 8000,         # kg/ha/year (DA Davao Region)
-        "farmgate_price_php_kg": 80,     # PHP/kg farmgate (Davao region, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 12,
-        "notes": "High-value; 7-10 yr to full production; Davao's premium export",
-        "source": "DA Region XI Durian Industry Development Program, 2023",
+        "avg_yield_kg_ha": 4500,
+        "farmgate_price_php_kg": 70,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "pruning_shaping":         {"man_days": 10, "cost": 5150},
+            "fertilizer_application":  {"man_days": 10, "cost": 5150},
+            "pest_disease_management": {"man_days": 20, "cost": 10300},
+            "flower_induction_care":   {"man_days": 10, "cost": 5150},
+            "fruit_bagging":           {"man_days": 30, "cost": 15450},
+            "harvesting_transport":    {"man_days": 20, "cost": 10300},
+            "other_crop_care":         {"man_days": 10, "cost": 5150},
+            "total": 56650,
+        },
+        "material_cost": {
+            "fertilizers":             45000,
+            "pesticides_fungicides":   25000,
+            "bagging_materials":        8000,
+            "other_materials":         20000,
+            "total": 98000,
+        },
+        "other_cost": {
+            "land_rental":            20000,
+            "equipment_tools":         8000,
+            "post_harvest_costs":     17350,
+            "total": 45350,
+        },
+        "production_cost_php": 200000,
+        "notes": "7–10 yr to full production; DA Davao avg mature orchard yield 3000–5000 kg/ha",
+        "source": "DA Region XI Durian Industry Program 2026, PSA Davao Region",
     },
+
+    # ── CORN ─────────────────────────────────────────────────────────────────
+    # Yellow hybrid, rain-fed, Tagum upland
+    # GR = 3200 × 17 = 54,400 | NI = 11,900 | ROI = 28%
     "Corn": {
-        "production_cost_php": 38000,   # PHP/ha/season (yellow corn, rain-fed)
-        "avg_yield_kg_ha": 3500,         # kg/ha (DA Region XI upland avg)
-        "farmgate_price_php_kg": 18,     # PHP/kg (PSA Davao del Norte, 2024)
         "cropping_seasons_per_year": 2,
         "harvest_months": 3,
-        "notes": "Yellow corn (hybrid); main upland crop in Tagum",
-        "source": "PhilMaize, PSA Corn Statistics 2023, DA Region XI",
+        "avg_yield_kg_ha": 3200,
+        "farmgate_price_php_kg": 17,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":        {"man_days": 5,  "cost": 2575},
+            "planting":                {"man_days": 5,  "cost": 2575},
+            "fertilizer_application":  {"man_days": 2,  "cost": 1030},
+            "weeding_cultivation":     {"man_days": 6,  "cost": 3090},
+            "pest_management":         {"man_days": 2,  "cost": 1030},
+            "harvesting_shelling":     {"man_days": 8,  "cost": 4120},
+            "total": 14420,
+        },
+        "material_cost": {
+            "seeds":                    3500,
+            "fertilizers":              8000,
+            "pesticides_herbicides":    3500,
+            "other_materials":          1000,
+            "total": 16000,
+        },
+        "other_cost": {
+            "land_rental":              6000,
+            "equipment_rental":         2500,
+            "post_harvest_costs":       3580,
+            "total": 12080,
+        },
+        "production_cost_php": 42500,
+        "notes": "Yellow hybrid corn; main upland crop in Tagum; rain-fed",
+        "source": "PhilMaize 2026, PSA Corn Statistics, DA Region XI",
     },
+
+    # ── MANGO ────────────────────────────────────────────────────────────────
+    # Carabao mango, established orchard, PCARRD Philippines avg 3000-4000 kg/ha
+    # GR = 3500 × 48 = 168,000 | NI = 56,000 | ROI = 50%
     "Mango": {
-        "production_cost_php": 60000,   # PHP/ha/year (established orchard)
-        "avg_yield_kg_ha": 6000,         # kg/ha/year (PCARRD data)
-        "farmgate_price_php_kg": 55,     # PHP/kg (Davao del Norte, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 12,
-        "notes": "Carabao mango; chemical induction used for off-season",
-        "source": "PCARRD Mango Production Guide, DA Region XI 2023",
+        "avg_yield_kg_ha": 3500,
+        "farmgate_price_php_kg": 48,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "pruning_shaping":         {"man_days": 6,  "cost": 3090},
+            "fertilizer_application":  {"man_days": 5,  "cost": 2575},
+            "flower_induction":        {"man_days": 5,  "cost": 2575},
+            "pest_disease_management": {"man_days": 10, "cost": 5150},
+            "fruit_bagging":           {"man_days": 20, "cost": 10300},
+            "harvesting_sorting":      {"man_days": 10, "cost": 5150},
+            "total": 28840,
+        },
+        "material_cost": {
+            "fertilizers":             20000,
+            "pesticides_fungicides":   15000,
+            "potassium_nitrate":        8000,
+            "bagging_materials":        5000,
+            "other_materials":          7000,
+            "total": 55000,
+        },
+        "other_cost": {
+            "land_rental":            12000,
+            "equipment_tools":         3000,
+            "post_harvest_costs":     13160,
+            "total": 28160,
+        },
+        "production_cost_php": 112000,
+        "notes": "Carabao mango; chemical induction for off-season; PCARRD PH avg 3000-4000 kg/ha",
+        "source": "PCARRD Mango Guide 2026, DA Region XI",
     },
+
+    # ── PAPAYA ───────────────────────────────────────────────────────────────
+    # Red Lady/Sinta; year-round fruiting; high disease management cost
+    # GR = 22000 × 11 = 242,000 | NI = 70,000 | ROI = 40.7%
     "Papaya": {
-        "production_cost_php": 150000,   # PHP/ha/year (accounting for Ringspot disease management)
-        "avg_yield_kg_ha": 30000,        # kg/ha/year (high-yielding variety)
-        "farmgate_price_php_kg": 12,     # PHP/kg (Tagum market, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 10,
-        "notes": "Red Lady or Sinta variety; year-round fruiting",
-        "source": "DA Crop Production Guide, PCAARRD 2023",
+        "avg_yield_kg_ha": 22000,
+        "farmgate_price_php_kg": 11,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":        {"man_days": 6,  "cost": 3090},
+            "transplanting":           {"man_days": 6,  "cost": 3090},
+            "fertilizer_application":  {"man_days": 7,  "cost": 3605},
+            "pest_disease_management": {"man_days": 20, "cost": 10300},
+            "weeding_cultivation":     {"man_days": 6,  "cost": 3090},
+            "harvesting_year_round":   {"man_days": 50, "cost": 25750},
+            "hauling_transport":       {"man_days": 5,  "cost": 2575},
+            "total": 51500,
+        },
+        "material_cost": {
+            "planting_materials":       5000,
+            "fertilizers":             30000,
+            "pesticides_insecticides": 35000,
+            "mulching_materials":       3000,
+            "other_materials":          7000,
+            "total": 80000,
+        },
+        "other_cost": {
+            "land_rental":            15000,
+            "equipment_tools":         5000,
+            "post_harvest_costs":     20500,
+            "total": 40500,
+        },
+        "production_cost_php": 172000,
+        "notes": "Red Lady/Sinta; Ringspot management is major cost; yield 22,000 kg/ha/yr",
+        "source": "DA Crop Production Guide 2026, PCAARRD",
     },
+
+    # ── CASSAVA ──────────────────────────────────────────────────────────────
+    # Industrial/starch variety; Davao del Norte starch mills
+    # GR = 15000 × 5 = 75,000 | NI = 15,000 | ROI = 25%
     "Cassava": {
-        "production_cost_php": 28000,   # PHP/ha/season
-        "avg_yield_kg_ha": 18000,        # kg/ha fresh roots (VSU/PhilRootcrops)
-        "farmgate_price_php_kg": 5,      # PHP/kg fresh roots (Davao del Norte, 2024)
         "cropping_seasons_per_year": 1,
         "harvest_months": 10,
-        "notes": "Industrial/starch variety; processed by local starch mills",
-        "source": "PhilRootcrops VSU, DA Region XI Root Crops Program 2023",
+        "avg_yield_kg_ha": 15000,
+        "farmgate_price_php_kg": 5,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":        {"man_days": 7,  "cost": 3605},
+            "planting":                {"man_days": 5,  "cost": 2575},
+            "fertilizer_application":  {"man_days": 2,  "cost": 1030},
+            "weeding_cultivation":     {"man_days": 8,  "cost": 4120},
+            "harvesting":              {"man_days": 15, "cost": 7725},
+            "hauling_transport":       {"man_days": 5,  "cost": 2575},
+            "total": 21630,
+        },
+        "material_cost": {
+            "planting_stakes":          5000,
+            "fertilizers":              8000,
+            "pesticides":               2000,
+            "other_materials":          1000,
+            "total": 16000,
+        },
+        "other_cost": {
+            "land_rental":              8000,
+            "equipment_rental":         5000,
+            "post_harvest_costs":       9370,
+            "total": 22370,
+        },
+        "production_cost_php": 60000,
+        "notes": "Industrial starch variety; Davao del Norte starch mills; yield 15,000 kg/ha fresh roots",
+        "source": "PhilRootcrops VSU 2026, DA Region XI Root Crops Program",
     },
+
+    # ── SWEET POTATO ─────────────────────────────────────────────────────────
+    # Orange-flesh; upland Tagum; 2 seasons/yr
+    # GR = 7500 × 15 = 112,500 | NI = 29,500 | ROI = 35.5%
     "Sweet Potato": {
-        "production_cost_php": 45000,   # PHP/ha/season (incl. labor for ridge prep and harvesting)
-        "avg_yield_kg_ha": 10000,        # kg/ha (UPLB data, adjusted for typical upland conditions)
-        "farmgate_price_php_kg": 15,     # PHP/kg (Tagum market, 2024 average)
         "cropping_seasons_per_year": 2,
         "harvest_months": 4,
-        "notes": "Orange-flesh variety for food security + commercial sale",
-        "source": "UPLB Sweet Potato Research, DA Region XI 2023",
+        "avg_yield_kg_ha": 7500,
+        "farmgate_price_php_kg": 15,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation_ridging": {"man_days": 12, "cost": 6180},
+            "planting_vine_cuttings":   {"man_days": 7,  "cost": 3605},
+            "fertilizer_application":   {"man_days": 2,  "cost": 1030},
+            "pest_disease_management":  {"man_days": 6,  "cost": 3090},
+            "weeding_cultivation":      {"man_days": 8,  "cost": 4120},
+            "harvesting":               {"man_days": 15, "cost": 7725},
+            "hauling_transport":        {"man_days": 5,  "cost": 2575},
+            "total": 28325,
+        },
+        "material_cost": {
+            "planting_vines":           4000,
+            "fertilizers":             12000,
+            "pesticides":               6000,
+            "other_materials":          3675,
+            "total": 25675,
+        },
+        "other_cost": {
+            "land_rental":             10000,
+            "equipment_rental":         4000,
+            "post_harvest_costs":      15000,
+            "total": 29000,
+        },
+        "production_cost_php": 83000,
+        "notes": "Orange-flesh OFSP; upland Tagum; 2 seasons/yr; yield 7,500 kg/ha/season",
+        "source": "UPLB Sweet Potato Research 2026, DA Region XI",
     },
+
+    # ── EGGPLANT ─────────────────────────────────────────────────────────────
+    # Intensive vegetable; high pest pressure (fruit borer); 2 seasons/yr
+    # GR = 10000 × 22 = 220,000 | NI = 63,000 | ROI = 40.1%
     "Eggplant": {
-        "production_cost_php": 120000,  # PHP/ha/season (intensive vegetable, high pesticide/labor)
-        "avg_yield_kg_ha": 18000,        # kg/ha (PCAARRD, irrigated but accounting for borer losses)
-        "farmgate_price_php_kg": 25,     # PHP/kg (Tagum/Davao del Norte, 2024)
         "cropping_seasons_per_year": 2,
         "harvest_months": 4,
-        "notes": "High-value vegetable; Tagum markets have strong demand",
-        "source": "PCAARRD Eggplant Production Guide, DA Region XI 2023",
+        "avg_yield_kg_ha": 10000,
+        "farmgate_price_php_kg": 22,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":         {"man_days": 7,  "cost": 3605},
+            "transplanting_seedlings":  {"man_days": 10, "cost": 5150},
+            "staking_trellising":       {"man_days": 10, "cost": 5150},
+            "fertilizer_application":   {"man_days": 5,  "cost": 2575},
+            "pest_disease_management":  {"man_days": 20, "cost": 10300},
+            "weeding_cultivation":      {"man_days": 8,  "cost": 4120},
+            "harvesting_every_3_days":  {"man_days": 50, "cost": 25750},
+            "hauling_marketing":        {"man_days": 10, "cost": 5150},
+            "total": 61800,
+        },
+        "material_cost": {
+            "seeds_seedling_raising":   5000,
+            "fertilizers":             25000,
+            "pesticides_insecticides": 30000,
+            "mulching_materials":       3000,
+            "other_materials":          7000,
+            "total": 70000,
+        },
+        "other_cost": {
+            "land_rental":             10000,
+            "equipment_tools":          2000,
+            "post_harvest_costs":      13200,
+            "total": 25200,
+        },
+        "production_cost_php": 157000,
+        "notes": "High-value vegetable; fruit borer major pest; yield 10,000 kg/ha/season",
+        "source": "PCAARRD Eggplant Guide 2026, DA Region XI",
     },
+
+    # ── TOMATO ───────────────────────────────────────────────────────────────
+    # Intensive; high disease pressure; price volatile ₱15–80/kg
+    # GR = 12000 × 25 = 300,000 | NI = 107,000 | ROI = 55.4%
     "Tomato": {
-        "production_cost_php": 140000,  # PHP/ha/season (trellising, pest control, labor)
-        "avg_yield_kg_ha": 15000,        # kg/ha (DA irrigated farm avg, adjusted for disease pressure)
-        "farmgate_price_php_kg": 30,     # PHP/kg (Tagum market avg, 2024 — highly volatile)
         "cropping_seasons_per_year": 2,
         "harvest_months": 3,
-        "notes": "Price highly volatile (₱15–80/kg); peak season = low price",
-        "source": "PCAARRD Tomato Production Guide, PSA 2024 price monitoring",
+        "avg_yield_kg_ha": 12000,
+        "farmgate_price_php_kg": 25,
+        "labor_cost": {
+            "wage_rate_php_day": 515,
+            "land_preparation":         {"man_days": 7,  "cost": 3605},
+            "transplanting_seedlings":  {"man_days": 10, "cost": 5150},
+            "staking_trellising":       {"man_days": 15, "cost": 7725},
+            "fertilizer_application":   {"man_days": 6,  "cost": 3090},
+            "pest_disease_management":  {"man_days": 30, "cost": 15450},
+            "weeding_cultivation":      {"man_days": 7,  "cost": 3605},
+            "harvesting":               {"man_days": 40, "cost": 20600},
+            "hauling_sorting":          {"man_days": 10, "cost": 5150},
+            "total": 64375,
+        },
+        "material_cost": {
+            "seeds_seedling":           5000,
+            "fertilizers":             30000,
+            "pesticides_fungicides":   45000,
+            "trellis_materials":       10000,
+            "other_materials":          5000,
+            "total": 95000,
+        },
+        "other_cost": {
+            "land_rental":             10000,
+            "equipment_tools":          2500,
+            "post_harvest_costs":      21125,
+            "total": 33625,
+        },
+        "production_cost_php": 193000,
+        "notes": "Price volatile ₱15–80/kg; avg ₱25 used; yield 12,000 kg/ha/season",
+        "source": "PCAARRD Tomato Guide 2026, PSA price monitoring",
     },
 }
 

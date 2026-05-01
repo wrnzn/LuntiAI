@@ -330,7 +330,7 @@ def generate_full_dataset(total_samples=120000):
     }
 
     actual_total = sum(crop_sample_counts.values())
-    print(f"📊 Generating {actual_total:,} total samples across {len(crop_sample_counts)} crops...")
+    print(f" Generating {actual_total:,} total samples across {len(crop_sample_counts)} crops...")
     print(f"{'='*60}")
 
     all_frames = []
@@ -338,7 +338,7 @@ def generate_full_dataset(total_samples=120000):
         params = CROP_PROFILES[crop_name]
         df = generate_crop_samples(crop_name, params, n_samples)
         all_frames.append(df)
-        print(f"  ✅ {crop_name:<15} — {n_samples:>6,} samples generated")
+        print(f"   {crop_name:<15} — {n_samples:>6,} samples generated")
 
     dataset = pd.concat(all_frames, ignore_index=True)
 
@@ -346,10 +346,10 @@ def generate_full_dataset(total_samples=120000):
     dataset = dataset.sample(frac=1, random_state=SEED).reset_index(drop=True)
 
     print(f"{'='*60}")
-    print(f"✅ Total dataset: {len(dataset):,} rows × {len(dataset.columns)} columns")
-    print(f"\n📋 Class distribution:")
+    print(f" Total dataset: {len(dataset):,} rows × {len(dataset.columns)} columns")
+    print(f"\n Class distribution:")
     print(dataset["label"].value_counts().to_string())
-    print(f"\n📊 Feature statistics:")
+    print(f"\n Feature statistics:")
     print(dataset.describe().round(2).to_string())
 
     return dataset
@@ -367,17 +367,17 @@ def main():
     # Save
     dataset.to_csv(output_path, index=False)
     file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
-    print(f"\n💾 Dataset saved to: {output_path}")
-    print(f"📁 File size: {file_size_mb:.1f} MB")
+    print(f"\n Dataset saved to: {output_path}")
+    print(f" File size: {file_size_mb:.1f} MB")
 
     # Validation checks
-    print(f"\n🔍 Validation:")
-    print(f"  • No null values: {not dataset.isnull().any().any()}")
-    print(f"  • All N in [0,200]: {(dataset['N'] >= 0).all() and (dataset['N'] <= 200).all()}")
-    print(f"  • All pH in [0,14]: {(dataset['ph'] >= 0).all() and (dataset['ph'] <= 14).all()}")
-    print(f"  • All OM in [0,10]: {(dataset['OM'] >= 0).all() and (dataset['OM'] <= 10).all()}")
-    print(f"  • All humidity in [0,100]: {(dataset['humidity'] >= 0).all() and (dataset['humidity'] <= 100).all()}")
-    print(f"  • Unique crops: {dataset['label'].nunique()} ({', '.join(sorted(dataset['label'].unique()))})")
+    print(f"\n Validation:")
+    print(f"   No null values: {not dataset.isnull().any().any()}")
+    print(f"   All N in [0,200]: {(dataset['N'] >= 0).all() and (dataset['N'] <= 200).all()}")
+    print(f"   All pH in [0,14]: {(dataset['ph'] >= 0).all() and (dataset['ph'] <= 14).all()}")
+    print(f"   All OM in [0,10]: {(dataset['OM'] >= 0).all() and (dataset['OM'] <= 10).all()}")
+    print(f"   All humidity in [0,100]: {(dataset['humidity'] >= 0).all() and (dataset['humidity'] <= 100).all()}")
+    print(f"   Unique crops: {dataset['label'].nunique()} ({', '.join(sorted(dataset['label'].unique()))})")
 
 
 if __name__ == "__main__":

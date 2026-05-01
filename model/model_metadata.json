@@ -40,5 +40,5 @@
   "training_data": "data/philippine_crop_dataset.csv",
   "training_samples": 96000,
   "test_samples": 24000,
-  "trained_at": "2026-05-01 10:32:43"
+  "trained_at": "2026-05-01 12:22:05"
 }

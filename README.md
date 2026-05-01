@@ -11,11 +11,13 @@ barangay, and our AI model recommends the best crop to plant based on your local
 soil profile and live weather conditions.
 
 ### Key Features
-- **23 Tagum Barangay Profiles** — Pre-mapped soil data (NPK, pH, soil type)
+- **23 Tagum Barangay Profiles** — Pre-mapped soil data (NPK, OM, pH, soil type)
 - **Live Weather Integration** — Real-time temperature, humidity via OpenWeatherMap
-- **Random Forest ML Model** — 82.93% accuracy, trained on 120,000+ data points
+- **Random Forest ML Model** — 85.62% accuracy, trained on 120,000+ data points
 - **12 Philippine Crops** — Rice, Banana, Cacao, Coconut, Durian, Corn, Mango, Papaya, Cassava, Sweet Potato, Eggplant, Tomato
-- **Fertilizer Advice** — Specific product recommendations from local Tagum stores
+- **Explainable AI (SHAP)** — Understand *why* the AI chose a crop with positive/negative impact factors
+- **UI Localization** — Supports English, Tagalog, and Bisaya
+- **Fertilizer Advice & ROI** — Localized product recommendations and realistic Business ROI Calculator
 - **Confidence Scoring** — Top-5 crop predictions with probability chart
 
 ---
@@ -111,9 +113,9 @@ crop-random-forest-model/
 
 ## Model Performance
 
-- **Accuracy:** 82.93%
-- **Top Features:** Potassium (K), Nitrogen (N), Rainfall
-- **Training Data:** 120,000 samples across 12 Philippine crops
+- **Accuracy:** 85.62%
+- **Top Features:** Potassium (K), Nitrogen (N), Rainfall, Organic Matter (OM)
+- **Training Data:** 120,000 samples across 12 Philippine crops (8 features)
 - **Methodology:** Domain-constrained synthetic data from BSWM/PAGASA/DA sources
 
 ---

@@ -43,7 +43,7 @@ Tagum City and Davao del Norte.
    eliminating the need for expensive laboratory soil testing for basic decisions
 4. To deliver **actionable fertilizer recommendations** with locally-available
    brands and stores, bridging the gap from "what to plant" to "how to grow it"
-5. To achieve a model accuracy of **≥80%** validated through cross-validation on
+5. To achieve a model accuracy of **≥85%** validated through cross-validation on
    120,000+ synthetic data points based on Philippine agricultural research
 
 ---
@@ -59,7 +59,7 @@ decisions.
 
 1. **📍 Select Your Barangay**
    The farmer selects their barangay from a dropdown. The system automatically
-   retrieves the pre-mapped soil profile (N, P, K, pH, soil type) and fetches
+   retrieves the pre-mapped soil profile (N, P, K, OM, pH, soil type) and fetches
    live weather data.
 
 2. **🤖 AI Analyzes the Data**
@@ -70,8 +70,10 @@ decisions.
 3. **🌾 Get Actionable Recommendations**
    The farmer receives:
    - The **best crop** with confidence percentage
+   - **Explainable AI (SHAP) Insights** showing why the crop was chosen
    - **Top 5 alternative crops** ranked by suitability
    - **Fertilizer advice** with specific products available at Tagum agrivet stores
+   - **Realistic ROI Calculator** based on localized production costs
 
 ### Key Innovation
 Unlike generic crop calculators, LuntiAI **eliminates manual data entry**.
@@ -82,10 +84,11 @@ and integrating live weather APIs.
 ### Tech Stack
 | Component | Technology |
 |-----------|-----------|
-| ML Model | Random Forest (scikit-learn) — 200 estimators, 82.93% accuracy |
-| Dataset | 120,000 rows, 12 crops, 7 features — domain-constrained synthetic data |
+| ML Model | Random Forest (scikit-learn) — 200 estimators, 85.62% accuracy |
+| Explainability | SHAP (SHapley Additive exPlanations) for AI transparency |
+| Dataset | 120,000 rows, 12 crops, 8 features (incl. OM) — synthetic data |
 | Backend | FastAPI (Python) — RESTful API with Swagger documentation |
-| Frontend | HTML/CSS/JavaScript — Dark-mode premium UI, glassmorphism design |
+| Frontend | HTML/CSS/JavaScript — Dark-mode, responsive, localized (EN/TL/CEB) |
 | Weather | OpenWeatherMap API — Real-time temperature, humidity, conditions |
 | Data Sources | BSWM, PAGASA, PhilRice, DA Technoguides, PCA |
 
@@ -123,7 +126,7 @@ and integrating live weather APIs.
 
 ### What Mang Kiko Needs
 - A **simple, one-step tool** that doesn't require technical knowledge
-- **Tagalog/Bisaya-friendly** interface (future localization)
+- **Tagalog/Bisaya-friendly** interface (already supported!)
 - Recommendations that mention **specific products** he can buy locally
 - Data he can **show to his cooperative** to justify crop decisions
 
@@ -219,12 +222,11 @@ and integrating live weather APIs.
 
 | Phase | Timeline | Milestone |
 |-------|----------|-----------|
-| MVP Launch | Q2 2026 | Web app live, 12 crops, 23 barangays |
+| MVP Launch | Q2 2026 | Web app live, 12 crops, 23 barangays, Multi-lingual UI |
 | Field Validation | Q3 2026 | Partner with USeP, collect 500 real soil samples |
 | Mobile App | Q4 2026 | Native Android app (offline-capable) |
-| Localization | Q1 2027 | Bisaya and Tagalog language support |
-| IoT Sensors | Q2 2027 | NPK soil sensor integration pilot |
-| Expansion | Q3 2027 | Scale to all Davao del Norte municipalities |
+| IoT Sensors | Q1 2027 | NPK & OM soil sensor integration pilot |
+| Expansion | Q2 2027 | Scale to all Davao del Norte municipalities |
 
 ---
 

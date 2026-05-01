@@ -16,6 +16,10 @@ Author: LuntiAI Team
 
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 import json
 from typing import Optional
 

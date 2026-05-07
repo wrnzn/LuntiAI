@@ -22,38 +22,84 @@
     <!-- Favicon (leaf emoji) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
 </head>
-<body>
+<body id="body">
+    <!-- Premium Visual Enhancements -->
+    <div class="noise-overlay"></div>
+    <div class="scroll-progress" id="scrollProgress"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Decorative Floating Elements -->
+    <div class="leaf-decoration leaf-1">🌿</div>
+    <div class="leaf-decoration leaf-2">🍃</div>
+    <div class="leaf-decoration leaf-3">🌱</div>
+
     <div class="container">
 
         <!-- ============================================================ -->
-        <!-- HEADER                                                       -->
+        <!-- NAVIGATION / TOP BAR                                         -->
         <!-- ============================================================ -->
-        <header class="header" id="header">
-            <!-- Header Controls -->
-            <div class="header-controls">
+        <nav class="top-nav" id="topNav">
+            <div class="logo-wrapper" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                <div class="logo-container">
+                    <div class="logo-icon-small">🌱</div>
+                    <div class="logo-glow"></div>
+                </div>
+                <span class="logo-text-small">LuntiAI</span>
+            </div>
+            
+            <div class="nav-controls">
                 <!-- Language Toggle -->
-                <div class="lang-toggle" id="langToggle" title="Language / Wika / Sinultian">
-                    <button class="lang-btn active" data-lang="en" id="langEN">EN</button>
-                    <button class="lang-btn" data-lang="tl" id="langTL">TL</button>
-                    <button class="lang-btn" data-lang="ceb" id="langCEB">CEB</button>
+                <div class="lang-selector" id="langToggle">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="tl">TL</button>
+                    <button class="lang-btn" data-lang="ceb">CEB</button>
                 </div>
                 <!-- Theme Toggle -->
-                <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+                <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <i class="fas fa-sun" id="themeIcon"></i>
                 </button>
             </div>
+        </nav>
 
-            <div class="logo-container">
-                <div class="logo-icon">🌱</div>
-                <span class="logo-text">LuntiAI</span>
+        <!-- ============================================================ -->
+        <!-- HERO SECTION                                                 -->
+        <!-- ============================================================ -->
+        <header class="hero" id="header">
+            <div class="hero-content">
+                <div class="hero-badge animate-in">
+                    <span class="pulse"></span>
+                    <span data-i18n="header_badge">AI Model Active • 12 Philippine Crops • 23 Barangays</span>
+                </div>
+                <h1 class="hero-title animate-in">
+                    Precision Farming <br>
+                    <span class="gradient-text">Powered by AI</span>
+                </h1>
+                <p class="hero-subtitle animate-in" data-i18n="header_subtitle">
+                    Smart crop recommendations based on real-time soil data and 
+                    weather patterns in Tagum City.
+                </p>
+                <div class="hero-actions animate-in">
+                    <a href="#selectorSection" class="btn btn-primary btn-lg">
+                        <span>Start Analysis</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    <div class="scroll-indicator">
+                        <span data-i18n="scroll_explore">Explore below</span>
+                        <div class="mouse">
+                            <div class="wheel"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <p class="header-subtitle" data-i18n="header_subtitle">
-                Precision agriculture powered by AI — Smart crop recommendations
-                for farmers in Tagum City, Davao del Norte
-            </p>
-            <div class="header-badge">
-                <span class="pulse"></span>
-                <span data-i18n="header_badge">AI Model Active • 12 Philippine Crops • 23 Barangays</span>
+            
+            <div class="hero-visual animate-in">
+                <div class="image-stack">
+                    <img src="assets/hero-bg.png" alt="Precision Agriculture" class="main-hero-img">
+                    <div class="image-overlay-card">
+                        <i class="fas fa-microchip"></i>
+                        <span>Neural Network Connected</span>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -93,18 +139,18 @@
             <!-- Weather & Soil Data Cards (appear after selection) -->
             <div id="autoDataSection" class="hidden">
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 8px;">
-                    <i class="fas fa-cloud-sun" style="color: var(--green-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="live_cond">Live Conditions</span>
-                    <span id="weatherSource" style="font-size: 0.7rem; color: var(--text-muted); margin-left: auto;"></span>
+                    <i class="fas fa-cloud-sun" style="color: var(--primary-400);"></i>
+                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;" data-i18n="live_cond">Live Conditions</span>
+                    <span id="weatherSource" style="font-size: 0.7rem; color: var(--text-dim); margin-left: auto;"></span>
                 </div>
                 <div class="data-grid" id="weatherDataGrid">
                     <!-- Dynamically populated -->
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px; margin-bottom: 8px;">
-                    <i class="fas fa-mountain" style="color: var(--earth-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="soil_prof">Soil Profile</span>
-                    <span id="soilType" style="font-size: 0.7rem; color: var(--text-muted); margin-left: auto;"></span>
+                    <i class="fas fa-mountain" style="color: var(--accent-400);"></i>
+                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;" data-i18n="soil_prof">Soil Profile</span>
+                    <span id="soilType" style="font-size: 0.7rem; color: var(--text-dim); margin-left: auto;"></span>
                 </div>
                 <div class="data-grid" id="soilDataGrid">
                     <!-- Dynamically populated -->
@@ -250,8 +296,8 @@
             <!-- Advanced Business Chart -->
             <div class="chart-container hidden" id="econChartContainer">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                    <i class="fas fa-chart-pie" style="color: var(--earth-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="econ_chart_title">Business Projection (per Hectare)</span>
+                    <i class="fas fa-chart-pie" style="color: var(--accent-400);"></i>
+                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;" data-i18n="econ_chart_title">Business Projection (per Hectare)</span>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="econChart"></canvas>
@@ -261,8 +307,8 @@
             <!-- Confidence chart -->
             <div class="chart-container">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                    <i class="fas fa-chart-bar" style="color: var(--green-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="pred_confidence">Prediction Confidence</span>
+                    <i class="fas fa-chart-bar" style="color: var(--primary-400);"></i>
+                    <span style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;" data-i18n="pred_confidence">Prediction Confidence</span>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="probChart"></canvas>

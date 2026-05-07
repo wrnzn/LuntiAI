@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pickle
+import joblib
 import numpy as np
 import os
 
@@ -12,27 +12,31 @@ model = None
 label_encoder = None
 
 def load_model_and_encoder():
-    """Load the trained Random Forest model and label encoder"""
+    """Load the trained Random Forest model and label encoder using joblib"""
     global model, label_encoder
     
     try:
-        # Load the Random Forest model
-        with open('crop_recommendation_model.pkl', 'rb') as f:
-            model = pickle.load(f)
-        print("✅ Random Forest model loaded successfully!")
+        # Load the Random Forest model using joblib
+        model_path = 'crop_recommendation_model.pkl'
+        if not os.path.exists(model_path):
+            # Try loading from the model directory if not in root
+            model_path = os.path.join('model', 'crop_model.pkl')
+            
+        model = joblib.load(model_path)
+        print(f"✅ Random Forest model loaded successfully from {model_path}!")
         
         # Load the label encoder
-        with open('label_encoder.pkl', 'rb') as f:
-            label_encoder = pickle.load(f)
-        print("✅ Label encoder loaded successfully!")
+        encoder_path = 'label_encoder.pkl'
+        if not os.path.exists(encoder_path):
+            encoder_path = os.path.join('model', 'label_encoder.pkl')
+            
+        label_encoder = joblib.load(encoder_path)
+        print(f"✅ Label encoder loaded successfully from {encoder_path}!")
         
         return True
         
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")
-        print("Please ensure both files are in the same directory as app.py:")
-        print("- crop_recommendation_model.pkl")
-        print("- label_encoder.pkl")
         return False
     except Exception as e:
         print(f"❌ Error loading models: {str(e)}")
@@ -48,8 +52,8 @@ def predict():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        # Define required fields
-        required_fields = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+        # Define required fields (matching the model's 8 features)
+        required_fields = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall', 'OM']
         
         # Check if all required fields are present
         missing_fields = [field for field in required_fields if field not in data]
@@ -67,7 +71,8 @@ def predict():
                 float(data['temperature']),
                 float(data['humidity']),
                 float(data['ph']),
-                float(data['rainfall'])
+                float(data['rainfall']),
+                float(data['OM'])
             ]
         except (ValueError, TypeError) as e:
             return jsonify({
@@ -79,16 +84,18 @@ def predict():
             return jsonify({'error': 'N (Nitrogen) must be between 0 and 200'}), 400
         if not (0 <= features[1] <= 200):  # P
             return jsonify({'error': 'P (Phosphorus) must be between 0 and 200'}), 400
-        if not (0 <= features[2] <= 200):  # K
-            return jsonify({'error': 'K (Potassium) must be between 0 and 200'}), 400
+        if not (0 <= features[2] <= 250):  # K (extended for model range)
+            return jsonify({'error': 'K (Potassium) must be between 0 and 250'}), 400
         if not (-50 <= features[3] <= 60):  # temperature
             return jsonify({'error': 'Temperature must be between -50 and 60°C'}), 400
         if not (0 <= features[4] <= 100):  # humidity
             return jsonify({'error': 'Humidity must be between 0 and 100%'}), 400
         if not (0 <= features[5] <= 14):  # ph
             return jsonify({'error': 'pH must be between 0 and 14'}), 400
-        if not (0 <= features[6] <= 1000):  # rainfall
-            return jsonify({'error': 'Rainfall must be between 0 and 1000mm'}), 400
+        if not (0 <= features[6] <= 2000):  # rainfall (extended for model range)
+            return jsonify({'error': 'Rainfall must be between 0 and 2000mm'}), 400
+        if not (0 <= features[7] <= 15):  # OM
+            return jsonify({'error': 'Organic Matter (OM) must be between 0 and 15%'}), 400
         
         # Check if models are loaded
         if model is None or label_encoder is None:
@@ -106,8 +113,7 @@ def predict():
             probabilities = model.predict_proba(features_array)[0]
             max_prob = max(probabilities)
             confidence = round(max_prob * 100, 2)
-            # Build top-3 predictions list without changing primary result fields
-            # Sort class indices by probability descending
+            # Build top-3 predictions list
             top_indices = np.argsort(probabilities)[::-1][:3]
             class_labels = label_encoder.inverse_transform(top_indices)
             top_predictions = []
@@ -169,8 +175,8 @@ if __name__ == '__main__':
     # Load the model and label encoder when starting the app
     if load_model_and_encoder():
         print("🚀 Starting Flask server...")
-        print("API Documentation available at: http://localhost:5000/")
-        print("Health check available at: http://localhost:5000/health")
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        print("API Documentation available at: http://localhost:8000/")
+        print("Health check available at: http://localhost:8000/health")
+        app.run(debug=True, host='0.0.0.0', port=8000)
     else:
         print("❌ Failed to load models. Please check that both pickle files exist.")

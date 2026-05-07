@@ -87,6 +87,7 @@ const I18N = {
         hero_title:         'AI Recommendation',
         hero_desc:          'Based on your soil and climate conditions',
         footer_built:       'Built for the Technopreneurship Academic Festival 2026',
+        scroll_explore:     'Explore below',
         live_cond:          'Live Conditions',
         soil_prof:          'Soil Profile',
         disclaimer_html:    '<strong>How does auto-fill work?</strong> Soil values are <em>barangay-level averages</em> from BSWM regional soil classification data — not exact measurements for your specific plot. Soil can vary within the same barangay due to elevation, drainage, and land-use history. These averages give you a <strong>reliable starting point</strong> (±15-20% of actual). If you have lab test results, override the values below for higher accuracy. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Future: IoT soil sensors will provide plot-level precision.</span>',
@@ -148,6 +149,7 @@ const I18N = {
         hero_title:         'Rekomendasyon ng AI',
         hero_desc:          'Batay sa kondisyon ng lupa at klima mo',
         footer_built:       'Ginawa para sa Technopreneurship Academic Festival 2026',
+        scroll_explore:     'I-explore sa ibaba',
         live_cond:          'Kasulukuyang Panahon',
         soil_prof:          'Profile ng Lupa',
         disclaimer_html:    '<strong>Paano gumagana ang auto-fill?</strong> Ang mga halaga ng lupa ay <em>average sa antas ng barangay</em> mula sa data ng BSWM — hindi eksaktong sukat para sa partikular na lote mo. Maaaring mag-iba ang lupa sa loob ng iisang barangay dahil sa elebasyon at daloy ng tubig. Ang mga average na ito ay nagbibigay ng <strong>maaasahang panimulang punto</strong> (±15-20% ng aktwal). Kung may resulta ka sa lab, palitan ang mga halaga para sa mas tumpak na resulta. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Hinaharap: Ang mga IoT sensor ay magbibigay ng eksaktong katumpakan sa lote.</span>',
@@ -228,6 +230,7 @@ const I18N = {
         hero_title:         'Rekomendasyon sa AI',
         hero_desc:          'Base sa kondisyon sa imong yuta ug klima',
         footer_built:       'Gihimo para sa Technopreneurship Academic Festival 2026',
+        scroll_explore:     'Tan-awa sa ubos',
         live_cond:          'Kasamtangang Panahon',
         soil_prof:          'Profile sa Yuta',
         disclaimer_html:    '<strong>Giunsa pag-obra ang auto-fill?</strong> Ang mga value sa yuta kay <em>average sa matag barangay</em> gikan sa datos sa BSWM — dili eksakto sa imong kaugalingong yuta. Ang yuta pwede magkalahi sa usa ka barangay tungod sa porma sa yuta ug agianan sa tubig. Kining mga average muhatag nimog <strong>kasaligan nga basehan</strong> (±15-20% sa tinuod). Kung duna kay resulta sa lab, usba ang mga value ubos para mas ensakto. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Sa Unahan: Ang mga IoT sensor muhatag og mas eksaktong datos sa matag luna.</span>',
@@ -325,6 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initLocalization();
     await loadBarangays();
     checkBackendHealth();
+    initInteractivity();
 
     // Language toggle buttons
     document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -813,8 +817,10 @@ function renderChart(predictions) {
     
     // Check if light mode is active for chart colors
     const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
-    const textColor = isLightMode ? '#44403c' : '#a5d6a7';
-    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.1)';
+    const textColor = isLightMode ? '#475569' : '#94a3b8';
+    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.05)';
+    const primaryColor = 'rgba(34, 197, 94, 0.7)';
+    const primaryBorder = 'rgba(34, 197, 94, 1)';
 
     probChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -823,10 +829,11 @@ function renderChart(predictions) {
             datasets: [{
                 label: 'Match Probability (%)',
                 data: data,
-                backgroundColor: 'rgba(34, 197, 94, 0.6)',
-                borderColor: 'rgba(34, 197, 94, 1)',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: primaryColor,
+                borderColor: primaryBorder,
+                borderWidth: 1.5,
+                borderRadius: 8,
+                hoverBackgroundColor: 'rgba(34, 197, 94, 0.9)',
             }]
         },
         options: {
@@ -870,8 +877,8 @@ function renderEconChart(cost, profit, gross) {
     }
     
     const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
-    const textColor = isLightMode ? '#44403c' : '#a5d6a7';
-    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.1)';
+    const textColor = isLightMode ? '#475569' : '#94a3b8';
+    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.05)';
 
     econChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -881,18 +888,18 @@ function renderEconChart(cost, profit, gross) {
                 {
                     label: t('econ_cost'),
                     data: [cost],
-                    backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.6)',
                     borderColor: 'rgba(245, 158, 11, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    borderWidth: 1.5,
+                    borderRadius: 8
                 },
                 {
                     label: t('econ_profit'),
                     data: [profit],
-                    backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.6)',
                     borderColor: 'rgba(34, 197, 94, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    borderWidth: 1.5,
+                    borderRadius: 8
                 }
             ]
         },
@@ -1033,3 +1040,27 @@ document.getElementById('themeToggle')?.addEventListener('click', () => {
         renderChart(predictions);
     }
 });
+
+// =============================================================================
+// UI INTERACTIVITY (Glow, Scroll, etc.)
+// =============================================================================
+function initInteractivity() {
+    const cursorGlow = document.getElementById('cursorGlow');
+    const scrollProgress = document.getElementById('scrollProgress');
+
+    // Cursor Glow Follow
+    document.addEventListener('mousemove', (e) => {
+        if (!cursorGlow) return;
+        cursorGlow.style.left = `${e.clientX}px`;
+        cursorGlow.style.top = `${e.clientY}px`;
+    });
+
+    // Scroll Progress
+    window.addEventListener('scroll', () => {
+        if (!scrollProgress) return;
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        scrollProgress.style.width = `${scrolled}%`;
+    });
+}

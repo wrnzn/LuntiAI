@@ -1,7 +1,7 @@
 {
   "model_type": "RandomForestClassifier",
   "n_estimators": 200,
-  "accuracy": 0.8562,
+  "accuracy": 0.8558,
   "n_classes": 12,
   "classes": [
     "Banana",
@@ -28,17 +28,17 @@
     "OM"
   ],
   "feature_importance": {
-    "K": 0.245,
-    "N": 0.1693,
-    "rainfall": 0.1652,
-    "humidity": 0.1046,
-    "P": 0.0969,
-    "OM": 0.0959,
+    "K": 0.2438,
+    "N": 0.1684,
+    "rainfall": 0.1659,
+    "humidity": 0.1043,
+    "P": 0.0977,
+    "OM": 0.0972,
     "temperature": 0.0657,
-    "ph": 0.0574
+    "ph": 0.0571
   },
   "training_data": "data/philippine_crop_dataset.csv",
   "training_samples": 96000,
   "test_samples": 24000,
-  "trained_at": "2026-05-01 12:22:05"
+  "trained_at": "2026-05-07 21:01:16"
 }

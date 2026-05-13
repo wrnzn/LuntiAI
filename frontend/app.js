@@ -145,7 +145,7 @@ const PremiumGate = {
             AuthManager.updateBadge();
         }
 
-        const targets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#altCropsSection', '#econChartContainer'];
+        const targets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#altCropsSection', '#econChartContainer', '#probChartContainer'];
         
         targets.forEach(selector => {
             const el = document.querySelector(selector);
@@ -161,10 +161,12 @@ const PremiumGate = {
                 const overlay = document.createElement('div');
                 overlay.className = 'lock-overlay';
                 overlay.innerHTML = `
-                    <div><i class="fas fa-lock" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
-                    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">You've used your 3 free daily predictions. Upgrade to unlock SHAP analysis, ROI, and detailed fertilizer logic.</div>
-                    <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Upgrade Now</button>
+                    <div class="lock-message-card">
+                        <div><i class="fas fa-lock" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
+                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. You've reached your free quota. Upgrade to unlock all insights.</div>
+                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
+                    </div>
                 `;
                 el.appendChild(overlay);
             }

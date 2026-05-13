@@ -231,6 +231,7 @@ body::before {
     border: 1px solid var(--border-card);
     border-radius: var(--radius-xl);
     padding: var(--space-xl);
+    margin-bottom: var(--space-2xl); /* fixed tight clustering */
     box-shadow: var(--shadow-lg);
     transition: all 0.3s ease;
 }
@@ -397,7 +398,7 @@ body::before {
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--space-md);
+    gap: var(--space-lg); /* loosened gap */
 }
 
 .form-group {
@@ -774,7 +775,7 @@ body::before {
     border-radius: var(--radius-md);
     font-size: 0.85rem;
     font-weight: 500;
-    z-index: 1000;
+    z-index: 10000;
     animation: slideInRight 0.3s ease-out;
     max-width: 360px;
     box-shadow: var(--shadow-xl);
@@ -1690,6 +1691,22 @@ body::before {
     text-align: center;
     padding: 20px;
     border-radius: inherit;
+}
+
+.lock-message-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: slideUp 0.4s ease;
 }
 
 /* ============================================================

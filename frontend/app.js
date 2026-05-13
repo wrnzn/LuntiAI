@@ -12,6 +12,260 @@ const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hos
     ? 'http://localhost:8000'
     : '';  // Relative path for deployed version
 
+// =============================================================================
+// AUTH & PREMIUM MANAGERS
+// =============================================================================
+const AuthManager = {
+    tokenKey: 'luntiai-jwt',
+    user: null,
+
+    init() {
+        this.updateBadge();
+        const token = this.getToken();
+        if (token) {
+            this.fetchProfile();
+        } else {
+            this.showModal();
+        }
+    },
+
+    getToken() { return localStorage.getItem(this.tokenKey); },
+    setToken(token) { localStorage.setItem(this.tokenKey, token); },
+    clearToken() { localStorage.removeItem(this.tokenKey); this.user = null; },
+
+    async login(phone, password) {
+        try {
+            const res = await fetch(`${API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                this.setToken(data.access_token);
+                this.user = data.user;
+                this.hideModal();
+                this.fetchProfile();
+                showToast('Login successful!', 'success');
+            } else {
+                showToast(data.detail || 'Login failed', 'error');
+            }
+        } catch (e) {
+            showToast('Network error during login', 'error');
+        }
+    },
+
+    async register(phone, name, password) {
+        try {
+            const res = await fetch(`${API_BASE}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, name, password })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                this.setToken(data.access_token);
+                this.user = data.user;
+                this.hideModal();
+                this.fetchProfile();
+                showToast('Registration successful!', 'success');
+            } else {
+                showToast(data.detail || 'Registration failed', 'error');
+            }
+        } catch (e) {
+            showToast('Network error during registration', 'error');
+        }
+    },
+
+    async fetchProfile() {
+        try {
+            const res = await fetch(`${API_BASE}/me`, {
+                headers: { 'Authorization': `Bearer ${this.getToken()}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.user = data.user;
+                this.user.quota = data.quota;
+                this.updateBadge();
+            } else {
+                this.logout();
+            }
+        } catch (e) {
+            console.error('Failed to fetch profile', e);
+        }
+    },
+
+    updateBadge() {
+        const badge = document.getElementById('accountBadge');
+        const headerBadge = document.querySelector('.header-badge');
+        if (headerBadge) headerBadge.style.display = 'none';
+
+        if (!this.user) {
+            badge.style.display = 'none';
+            return;
+        }
+
+        badge.style.display = 'flex';
+        document.getElementById('badgeName').textContent = this.user.name;
+        
+        const tierEl = document.getElementById('badgeTier');
+        const quotaEl = document.getElementById('badgeQuota');
+        
+        if (this.user.tier === 'premium') {
+            tierEl.textContent = 'Premium';
+            tierEl.className = 'tier-premium';
+            quotaEl.textContent = '∞';
+        } else {
+            tierEl.textContent = 'Free';
+            tierEl.className = 'tier-free';
+            quotaEl.textContent = `${this.user.quota?.remaining || 0}/3`;
+        }
+
+        document.getElementById('btnLogoutBadge').onclick = () => this.logout();
+        document.getElementById('btnUpgradeBadge').onclick = () => this.showUpgradeModal();
+    },
+
+    logout() {
+        this.clearToken();
+        this.updateBadge();
+        this.showModal();
+        showToast('Logged out', 'success');
+    },
+
+    showModal() { document.getElementById('authModal').classList.remove('hidden'); },
+    hideModal() { document.getElementById('authModal').classList.add('hidden'); },
+    showUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); },
+    hideUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
+};
+
+const PremiumGate = {
+    handleQuota(result) {
+        if (AuthManager.user) {
+            AuthManager.user.quota = { remaining: result.quota_remaining };
+            AuthManager.updateBadge();
+        }
+
+        const targets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#altCropsSection', '#econChartContainer'];
+        
+        targets.forEach(selector => {
+            const el = document.querySelector(selector);
+            if (!el || el.innerHTML.trim() === '' || el.classList.contains('hidden')) return;
+
+            // Clean existing locks
+            el.classList.remove('locked-section');
+            const existingLock = el.querySelector('.lock-overlay');
+            if (existingLock) existingLock.remove();
+
+            if (result.is_quota_limited) {
+                el.classList.add('locked-section');
+                const overlay = document.createElement('div');
+                overlay.className = 'lock-overlay';
+                overlay.innerHTML = `
+                    <div><i class="fas fa-lock" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
+                    <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">You've used your 3 free daily predictions. Upgrade to unlock SHAP analysis, ROI, and detailed fertilizer logic.</div>
+                    <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Upgrade Now</button>
+                `;
+                el.appendChild(overlay);
+            }
+        });
+    }
+};
+
+const HistoryManager = {
+    init() {
+        const btn = document.getElementById('btnHistoryBadge');
+        if (btn) btn.onclick = () => this.showModal();
+    },
+
+    async showModal() {
+        try {
+            const res = await fetch(`${API_BASE}/history`, {
+                headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
+            });
+            const data = await res.json();
+            
+            if (res.status === 403) {
+                showToast(data.detail || 'Premium feature only', 'error');
+                return;
+            }
+
+            if (res.ok) {
+                const list = document.getElementById('historyList');
+                if (data.history.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No predictions yet.</div>';
+                } else {
+                    list.innerHTML = data.history.map(item => `
+                        <div class="history-item">
+                            <div class="history-item-info">
+                                <div class="history-item-crop">${item.best_crop} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(${item.confidence}%)</span></div>
+                                <div class="history-item-date">${new Date(item.created_at).toLocaleString()}</div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);"><i class="fas fa-map-marker-alt"></i> ${item.barangay || 'Unknown'}</div>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('historyModal').classList.remove('hidden');
+            }
+        } catch (e) {
+            showToast('Failed to load history', 'error');
+        }
+    },
+
+    hideModal() { document.getElementById('historyModal').classList.add('hidden'); }
+};
+
+// Global handlers for HTML integration
+window.switchAuthTab = function(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
+    if (tab === 'login') {
+        document.getElementById('tabLogin').classList.add('active');
+        document.getElementById('loginForm').classList.remove('hidden');
+    } else {
+        document.getElementById('tabRegister').classList.add('active');
+        document.getElementById('registerForm').classList.remove('hidden');
+    }
+};
+
+window.handleLogin = function(e) {
+    e.preventDefault();
+    AuthManager.login(document.getElementById('loginPhone').value, document.getElementById('loginPassword').value);
+};
+
+window.handleRegister = function(e) {
+    e.preventDefault();
+    AuthManager.register(document.getElementById('regPhone').value, document.getElementById('regName').value, document.getElementById('regPassword').value);
+};
+
+window.handleRedeem = async function(e) {
+    e.preventDefault();
+    const code = document.getElementById('promoCodeInput').value;
+    try {
+        const res = await fetch(`${API_BASE}/redeem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AuthManager.getToken()}` },
+            body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('Premium unlocked!', 'success');
+            AuthManager.hideUpgradeModal();
+            AuthManager.fetchProfile();
+            // Retrigger predict to refresh view without locks if we have inputs
+            if (window.lastResult) document.getElementById('cropForm').dispatchEvent(new Event('submit'));
+        } else {
+            showToast(data.detail || 'Invalid code', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
+};
+
+// =============================================================================
+// DOM REFERENCES
+// =============================================================================
+
 // Crop emoji mapping
 const CROP_ICONS = {
     'Rice':         '🌾',
@@ -323,6 +577,8 @@ let probChartInstance = null;
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     initLocalization();
+    AuthManager.init();
+    HistoryManager.init();
     await loadBarangays();
     checkBackendHealth();
 
@@ -564,7 +820,10 @@ cropForm.addEventListener('submit', async (e) => {
     try {
         const res = await fetch(`${API_BASE}/predict`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AuthManager.getToken()}` 
+            },
             body: JSON.stringify(payload),
         });
 
@@ -595,6 +854,16 @@ function renderResults(result) {
     // Construct localized message
     const locMsg = `${t('msg_prefix')} <strong>${result.best_crop}</strong> ${t('msg_suffix')}`;
 
+    let warningHtml = '';
+    if (result.maturity_warning) {
+        warningHtml = `
+            <div class="warning-banner" style="margin-top: 16px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span><strong>Tree Crop Advisory:</strong> This crop takes ${result.maturity_years_to_first_harvest} years to reach its first harvest. Please plan your financial runway accordingly. ${result.intercropping ? `Consider intercropping with <strong>${result.intercropping}</strong> for short-term income.` : ''}</span>
+            </div>
+        `;
+    }
+
     resultHero.innerHTML = `
         <div class="result-hero">
             <div style="font-size: 3.5rem; margin-bottom: 8px;">${icon}</div>
@@ -603,6 +872,7 @@ function renderResults(result) {
             <div class="result-confidence" style="color: ${confColor}; border-color: ${confColor}40;">
                 <i class="fas fa-bullseye"></i> ${(result.confidence).toFixed(2)}% <span data-i18n="pred_confidence">${t('pred_confidence')}</span>
             </div>
+            ${warningHtml}
         </div>
     `;
 
@@ -741,6 +1011,10 @@ function renderResults(result) {
 
     // Show results
     resultsSection.classList.remove('hidden');
+    
+    // Process Premium Gate
+    PremiumGate.handleQuota(result);
+    
     setTimeout(() => {
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);

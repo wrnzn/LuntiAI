@@ -1479,3 +1479,291 @@ body::before {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(0,0,0,0.05);
 }
+
+/* ============================================================
+   ACCOUNT & AUTH BADGE
+   ============================================================ */
+.account-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    backdrop-filter: blur(8px);
+}
+
+.account-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-divider {
+    color: var(--text-muted);
+}
+
+.tier-free {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tier-premium {
+    color: var(--green-400);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.quota-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    padding-left: 12px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--green-400);
+    transform: scale(1.1);
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.auth-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.auth-tab.active {
+    color: var(--green-400);
+}
+
+.auth-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -11px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--green-400);
+    border-radius: 2px 2px 0 0;
+}
+
+.history-item {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-item-crop {
+    font-weight: 600;
+    color: var(--green-400);
+}
+
+.history-item-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ============================================================
+   WARNING BANNER & PREMIUM LOCK
+   ============================================================ */
+.warning-banner {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fbbf24;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    animation: fadeInDown 0.4s ease;
+}
+
+.warning-banner i {
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+
+.warning-banner strong {
+    color: #fcd34d;
+}
+
+.locked-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.locked-section > *:not(.lock-overlay) {
+    filter: blur(5px) grayscale(50%);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.6;
+}
+
+.lock-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+    border-radius: inherit;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   LIGHT THEME OVERRIDES
+   ============================================================ */
+[data-theme="light"] .account-badge {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .quota-text {
+    border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .tier-premium {
+    color: var(--green-600);
+    text-shadow: none;
+}
+
+[data-theme="light"] .icon-btn {
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .icon-btn:hover {
+    color: var(--green-600);
+}
+
+[data-theme="light"] .modal-overlay {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] .modal-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .auth-tabs {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .history-item {
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .warning-banner {
+    background: rgba(254, 243, 199, 0.8);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #b45309;
+}
+
+[data-theme="light"] .warning-banner strong {
+    color: #92400e;
+}
+
+[data-theme="light"] .lock-overlay {
+    background: rgba(255, 255, 255, 0.4);
+}

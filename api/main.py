@@ -16,25 +16,33 @@ Author: LuntiAI Team
 
 import os
 import sys
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional in lean test environments
+    def load_dotenv(*args, **kwargs):
+        return False
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 import json
-from typing import Optional
+from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import numpy as np
 import joblib
-import shap
+try:
+    import shap
+except ImportError:  # pragma: no cover - optional for tests and lean installs
+    shap = None
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import auth
+import database
 from barangay_data import TAGUM_BARANGAYS, get_fertilizer_recommendations, get_crop_economics
 from weather_service import get_weather_data
 
@@ -89,19 +97,23 @@ def load_model():
             model_metadata = json.load(f)
 
     # Initialize SHAP explainer
-    try:
-        explainer = shap.TreeExplainer(model)
-        print("SHAP explainer initialized.")
-    except Exception as e:
-        print(f"WARNING: Could not initialize SHAP explainer: {e}")
+    if shap is not None:
+        try:
+            explainer = shap.TreeExplainer(model)
+            print("SHAP explainer initialized.")
+        except Exception as e:
+            print(f"WARNING: Could not initialize SHAP explainer: {e}")
+    else:
+        print("WARNING: SHAP package not installed; explanations disabled.")
 
-    print(f"Model loaded: {model_metadata.get('accuracy', 'N/A')} accuracy")
+    print(f"Model loaded: {(model_metadata or {}).get('accuracy', 'N/A')} accuracy")
     return True
 
 
 # Load on startup
 @app.on_event("startup")
 async def startup():
+    database.init_db()
     if not load_model():
         print("WARNING: Model not loaded. Run train_model.py first.")
 
@@ -122,15 +134,54 @@ class PredictionRequest(BaseModel):
     barangay: Optional[str] = Field(None, description="Barangay name (optional)")
 
 
+class RegisterRequest(BaseModel):
+    phone: str = Field(..., description="PH mobile number")
+    name: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8)
+
+
+class LoginRequest(BaseModel):
+    phone: str = Field(..., description="PH mobile number")
+    password: str = Field(..., min_length=8)
+
+
+class UpdateMeRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1)
+    password: Optional[str] = Field(None, min_length=8)
+
+
+class RedeemRequest(BaseModel):
+    code: str = Field(..., min_length=1)
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict
+    quota: dict
+
+
+class UserResponse(BaseModel):
+    user: dict
+    quota: dict
+
+
 class PredictionResponse(BaseModel):
     best_crop: str
     confidence: float
     message: str
-    top_predictions: list
-    fertilizer_recommendations: list
+    top_predictions: Optional[list] = None
+    fertilizer_recommendations: Optional[list] = None
     shap_explanation: Optional[dict] = None
     barangay_info: Optional[dict] = None
     crop_economics: Optional[dict] = None
+    crop_category: str = ""
+    maturity_years_to_first_harvest: Optional[str] = None
+    maturity_warning: bool = False
+    intercropping: Optional[list] = None
+    is_quota_limited: bool = False
+    quota_remaining: int = 0
+    quota_resets_at: Optional[str] = None
 
 
 # =============================================================================
@@ -140,9 +191,133 @@ class PredictionResponse(BaseModel):
 # OpenWeatherMap API key
 WEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "YOUR_API_KEY_HERE")
 
+TREE_CROP_METADATA = {
+    "Coconut": {
+        "maturity_years_to_first_harvest": "6-8",
+        "intercropping": ["Cacao"],
+    },
+    "Coffee": {
+        "maturity_years_to_first_harvest": "3-4",
+        "intercropping": ["Banana"],
+    },
+    "Mango": {
+        "maturity_years_to_first_harvest": "5-7",
+        "intercropping": ["Vegetables"],
+    },
+    "Apple": {"maturity_years_to_first_harvest": None, "intercropping": []},
+    "Orange": {"maturity_years_to_first_harvest": None, "intercropping": []},
+    "Papaya": {"maturity_years_to_first_harvest": None, "intercropping": []},
+}
+ROOT_CROPS = {"Cassava", "Sweet Potato"}
+SHORT_CYCLE_CROPS = {
+    "Rice", "Corn", "Mungbean", "Lentil", "Banana", "Cotton", "Jute",
+    "Watermelon", "Pomegranate", "Grapes", "Maize", "Chickpea",
+    "Kidney Beans", "Pigeon Peas", "Moth Beans", "Black Gram",
+}
+
+
+def _model_dump(model_obj: BaseModel) -> dict[str, Any]:
+    if hasattr(model_obj, "model_dump"):
+        return model_obj.model_dump()
+    return model_obj.dict()
+
+
+def _crop_metadata(crop_name: str) -> dict[str, Any]:
+    if crop_name in TREE_CROP_METADATA:
+        return {
+            "crop_category": "tree_crop",
+            "maturity_years_to_first_harvest": TREE_CROP_METADATA[crop_name][
+                "maturity_years_to_first_harvest"
+            ],
+            "maturity_warning": True,
+        }
+    if crop_name in ROOT_CROPS:
+        return {
+            "crop_category": "root_crop",
+            "maturity_years_to_first_harvest": None,
+            "maturity_warning": False,
+        }
+    return {
+        "crop_category": "short_cycle_crop",
+        "maturity_years_to_first_harvest": None,
+        "maturity_warning": False,
+    }
+
+
+def _intercropping_for(crop_name: str) -> Optional[list]:
+    suggestions = TREE_CROP_METADATA.get(crop_name, {}).get("intercropping", [])
+    return suggestions or None
+
+
+def _user_response(user: dict) -> dict:
+    return {"user": user, "quota": database.get_quota_status(user["id"])}
+
+
+def _auth_response(user: dict) -> dict:
+    return {
+        "access_token": auth.create_access_token(user["id"]),
+        "token_type": "bearer",
+        **_user_response(user),
+    }
+
+
+@app.post("/register", response_model=AuthResponse)
+async def register(request: RegisterRequest):
+    try:
+        user = database.create_user(request.phone, request.name, request.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return _auth_response(user)
+
+
+@app.post("/login", response_model=AuthResponse)
+async def login(request: LoginRequest):
+    user = database.authenticate_user(request.phone, request.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return _auth_response(user)
+
+
+@app.get("/me", response_model=UserResponse)
+async def me(current_user: dict = Depends(auth.get_current_user)):
+    return _user_response(current_user)
+
+
+@app.put("/me", response_model=UserResponse)
+async def update_me(request: UpdateMeRequest, current_user: dict = Depends(auth.get_current_user)):
+    fields = {key: value for key, value in _model_dump(request).items() if value is not None}
+    try:
+        user = database.update_user(current_user["id"], fields)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return _user_response(user)
+
+
+@app.delete("/me")
+async def delete_me(current_user: dict = Depends(auth.get_current_user)):
+    database.delete_user(current_user["id"])
+    return {"message": "Account deleted"}
+
+
+@app.post("/redeem", response_model=UserResponse)
+async def redeem(request: RedeemRequest, current_user: dict = Depends(auth.get_current_user)):
+    try:
+        user = database.redeem_code(current_user["id"], request.code)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return _user_response(user)
+
+
+@app.get("/history")
+async def history(limit: int = 50, current_user: dict = Depends(auth.get_current_user)):
+    if current_user["tier"] != "premium":
+        raise HTTPException(status_code=403, detail="Premium feature")
+    rows = database.get_prediction_history(current_user["id"], limit=limit)
+    return {"total": len(rows), "history": rows}
+
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict_crop(request: PredictionRequest):
+async def predict_crop(request: PredictionRequest, current_user: dict = Depends(auth.get_current_user)):
     """
     Predict the optimal crop based on soil and climate conditions.
     Returns top-3 predictions with confidence scores and fertilizer advice.
@@ -164,20 +339,27 @@ async def predict_crop(request: PredictionRequest):
     probabilities = model.predict_proba(features)[0]
     max_prob = float(max(probabilities))
     confidence = round(max_prob * 100, 2)
+    metadata = _crop_metadata(str(crop_name))
+    quota = database.check_and_increment_quota(current_user["id"])
+    has_full_access = bool(quota["allowed"])
 
     # Top 5 predictions
-    top_indices = np.argsort(probabilities)[::-1][:5]
-    top_predictions = []
-    for idx in top_indices:
-        label = label_encoder.inverse_transform([idx])[0]
-        prob = round(float(probabilities[idx]) * 100, 2)
-        if prob > 0.5:  # Only show meaningful predictions
-            top_predictions.append({"crop": str(label), "probability": prob})
+    top_predictions = None
+    if has_full_access:
+        top_indices = np.argsort(probabilities)[::-1][:5]
+        top_predictions = []
+        for idx in top_indices:
+            label = label_encoder.inverse_transform([idx])[0]
+            prob = round(float(probabilities[idx]) * 100, 2)
+            if prob > 0.5:  # Only show meaningful predictions
+                top_predictions.append({"crop": str(label), "probability": prob})
 
     # Fertilizer recommendations
-    fertilizer_recs = get_fertilizer_recommendations(
-        request.N, request.P, request.K, request.ph, request.OM
-    )
+    fertilizer_recs = None
+    if has_full_access:
+        fertilizer_recs = get_fertilizer_recommendations(
+            request.N, request.P, request.K, request.ph, request.OM
+        )
 
     # Barangay info if provided
     barangay_info = None
@@ -193,7 +375,7 @@ async def predict_crop(request: PredictionRequest):
 
     # SHAP Explanation
     shap_explanation = None
-    if explainer is not None:
+    if has_full_access and explainer is not None:
         try:
             # Get SHAP values for the predicted class
             predicted_class_idx = int(prediction_encoded)
@@ -211,25 +393,53 @@ async def predict_crop(request: PredictionRequest):
             impacts = sorted(zip(feature_names, class_shap), key=lambda x: abs(x[1]), reverse=True)
             
             shap_explanation = {
-                "top_positive": [{"feature": feat, "value": val} for feat, val in impacts if val > 0][:3],
-                "top_negative": [{"feature": feat, "value": val} for feat, val in impacts if val < 0][:3]
+                "top_positive": [
+                    {"feature": feat, "value": float(val)} for feat, val in impacts if val > 0
+                ][:3],
+                "top_negative": [
+                    {"feature": feat, "value": float(val)} for feat, val in impacts if val < 0
+                ][:3],
             }
         except Exception as e:
             print(f"SHAP calculation error: {e}")
 
     # Crop economics for ROI
-    crop_econ = get_crop_economics(crop_name)
+    crop_econ = get_crop_economics(crop_name) if has_full_access else None
 
-    return PredictionResponse(
-        best_crop=crop_name,
-        confidence=confidence,
-        message=f"Based on your soil and climate conditions, {crop_name} is the recommended crop.",
-        top_predictions=top_predictions,
-        fertilizer_recommendations=fertilizer_recs,
-        shap_explanation=shap_explanation,
-        barangay_info=barangay_info,
-        crop_economics=crop_econ,
-    )
+    intercropping = None
+    if (
+        has_full_access
+        and current_user["tier"] == "premium"
+        and metadata["crop_category"] == "tree_crop"
+    ):
+        intercropping = _intercropping_for(str(crop_name))
+
+    message = f"Based on your soil and climate conditions, {crop_name} is the recommended crop."
+    if not has_full_access:
+        message = (
+            f"{crop_name} is the recommended crop. Daily free quota reached; "
+            "Premium details unlock after reset or upgrade."
+        )
+
+    result = {
+        "best_crop": str(crop_name),
+        "confidence": confidence,
+        "message": message,
+        "top_predictions": top_predictions,
+        "fertilizer_recommendations": fertilizer_recs,
+        "shap_explanation": shap_explanation,
+        "barangay_info": barangay_info,
+        "crop_economics": crop_econ,
+        "crop_category": metadata["crop_category"],
+        "maturity_years_to_first_harvest": metadata["maturity_years_to_first_harvest"],
+        "maturity_warning": metadata["maturity_warning"],
+        "intercropping": intercropping,
+        "is_quota_limited": not has_full_access,
+        "quota_remaining": quota["remaining"],
+        "quota_resets_at": quota["resets_at"],
+    }
+    database.record_prediction(current_user["id"], _model_dump(request), result)
+    return PredictionResponse(**result)
 
 
 @app.get("/barangays")

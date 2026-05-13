@@ -215,10 +215,6 @@ and integrating live weather APIs.
 > institutions. We then use truncated normal distributions with realistic
 > correlations to generate training data."
 
-> "Our next phase involves **field validation** — partnering with USeP Tagum-Mabini
-> College of Agriculture and the Tagum City Agriculturist to collect actual soil
-> samples and ground-truth our model against real field performance."
-
 ---
 
 ## 9. Roadmap
@@ -226,10 +222,9 @@ and integrating live weather APIs.
 | Phase | Timeline | Milestone |
 |-------|----------|-----------|
 | MVP Launch | Q2 2026 | Web app live, 12 crops, 23 barangays, Multi-lingual UI |
-| Field Validation | Q3 2026 | Partner with USeP, collect 500 real soil samples |
-| Mobile App | Q4 2026 | Native Android app (offline-capable) |
-| IoT Sensors | Q1 2027 | NPK & OM soil sensor integration pilot |
-| Expansion | Q2 2027 | Scale to all Davao del Norte municipalities |
+| Mobile App | Q3 2026 | Native Android app (offline-capable) |
+| IoT Sensors | Q4 2026 | NPK & OM soil sensor integration pilot |
+| Expansion | Q1 2027 | Scale to all Davao del Norte municipalities |
 
 ---
 

@@ -48,7 +48,10 @@ const AuthManager = {
                 this.fetchProfile();
                 showToast('Login successful!', 'success');
             } else {
-                showToast(data.detail || 'Login failed', 'error');
+                let errorMsg = 'Login failed';
+                if (typeof data.detail === 'string') errorMsg = data.detail;
+                else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || 'Validation error';
+                showToast(errorMsg, 'error');
             }
         } catch (e) {
             showToast('Network error during login', 'error');
@@ -70,7 +73,10 @@ const AuthManager = {
                 this.fetchProfile();
                 showToast('Registration successful!', 'success');
             } else {
-                showToast(data.detail || 'Registration failed', 'error');
+                let errorMsg = 'Registration failed';
+                if (typeof data.detail === 'string') errorMsg = data.detail;
+                else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || 'Validation error';
+                showToast(errorMsg, 'error');
             }
         } catch (e) {
             showToast('Network error during registration', 'error');
@@ -841,7 +847,7 @@ cropForm.addEventListener('submit', async (e) => {
     for (const [key, val] of Object.entries(payload)) {
         if (key === 'barangay') continue;
         if (isNaN(val) || val === null) {
-            showToast(`Please fill in all fields. "${key}" is missing.`, 'error');
+            showToast('Please select a Barangay or fill in all soil parameters manually.', 'error');
             return;
         }
     }

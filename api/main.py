@@ -344,22 +344,18 @@ async def predict_crop(request: PredictionRequest, current_user: dict = Depends(
     has_full_access = bool(quota["allowed"])
 
     # Top 5 predictions
-    top_predictions = None
-    if has_full_access:
-        top_indices = np.argsort(probabilities)[::-1][:5]
-        top_predictions = []
-        for idx in top_indices:
-            label = label_encoder.inverse_transform([idx])[0]
-            prob = round(float(probabilities[idx]) * 100, 2)
-            if prob > 0.5:  # Only show meaningful predictions
-                top_predictions.append({"crop": str(label), "probability": prob})
+    top_indices = np.argsort(probabilities)[::-1][:5]
+    top_predictions = []
+    for idx in top_indices:
+        label = label_encoder.inverse_transform([idx])[0]
+        prob = round(float(probabilities[idx]) * 100, 2)
+        if prob > 0.5:  # Only show meaningful predictions
+            top_predictions.append({"crop": str(label), "probability": prob})
 
     # Fertilizer recommendations
-    fertilizer_recs = None
-    if has_full_access:
-        fertilizer_recs = get_fertilizer_recommendations(
-            request.N, request.P, request.K, request.ph, request.OM
-        )
+    fertilizer_recs = get_fertilizer_recommendations(
+        request.N, request.P, request.K, request.ph, request.OM
+    )
 
     # Barangay info if provided
     barangay_info = None
@@ -375,7 +371,7 @@ async def predict_crop(request: PredictionRequest, current_user: dict = Depends(
 
     # SHAP Explanation
     shap_explanation = None
-    if has_full_access and explainer is not None:
+    if explainer is not None:
         try:
             # Get SHAP values for the predicted class
             predicted_class_idx = int(prediction_encoded)
@@ -404,14 +400,10 @@ async def predict_crop(request: PredictionRequest, current_user: dict = Depends(
             print(f"SHAP calculation error: {e}")
 
     # Crop economics for ROI
-    crop_econ = get_crop_economics(crop_name) if has_full_access else None
+    crop_econ = get_crop_economics(crop_name)
 
     intercropping = None
-    if (
-        has_full_access
-        and current_user["tier"] == "premium"
-        and metadata["crop_category"] == "tree_crop"
-    ):
+    if metadata["crop_category"] == "tree_crop":
         intercropping = _intercropping_for(str(crop_name))
 
     message = f"Based on your soil and climate conditions, {crop_name} is the recommended crop."

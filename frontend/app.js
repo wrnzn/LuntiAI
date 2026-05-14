@@ -145,9 +145,12 @@ const PremiumGate = {
             AuthManager.updateBadge();
         }
 
-        const targets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#altCropsSection', '#econChartContainer', '#probChartContainer'];
+        const isPremium = AuthManager.user && AuthManager.user.tier === 'premium';
+
+        // 1. Premium-Only Features (Always locked for free users)
+        const premiumTargets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#econChartContainer'];
         
-        targets.forEach(selector => {
+        premiumTargets.forEach(selector => {
             const el = document.querySelector(selector);
             if (!el || el.innerHTML.trim() === '' || el.classList.contains('hidden')) return;
 
@@ -156,15 +159,43 @@ const PremiumGate = {
             const existingLock = el.querySelector('.lock-overlay');
             if (existingLock) existingLock.remove();
 
-            if (result.is_quota_limited) {
+            if (!isPremium) {
                 el.classList.add('locked-section');
                 const overlay = document.createElement('div');
                 overlay.className = 'lock-overlay';
                 overlay.innerHTML = `
                     <div class="lock-message-card">
-                        <div><i class="fas fa-lock" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
+                        <div><i class="fas fa-gem" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
                         <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. You've reached your free quota. Upgrade to unlock all insights.</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. Upgrade to unlock SHAP analysis, ROI, and detailed fertilizer logic.</div>
+                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
+                    </div>
+                `;
+                el.appendChild(overlay);
+            }
+        });
+
+        // 2. Quota-Limited Features (Locked only when free quota is exhausted)
+        const quotaTargets = ['#altCropsSection', '#probChartContainer'];
+        
+        quotaTargets.forEach(selector => {
+            const el = document.querySelector(selector);
+            if (!el || el.innerHTML.trim() === '' || el.classList.contains('hidden')) return;
+
+            // Clean existing locks
+            el.classList.remove('locked-section');
+            const existingLock = el.querySelector('.lock-overlay');
+            if (existingLock) existingLock.remove();
+
+            if (result.is_quota_limited && !isPremium) {
+                el.classList.add('locked-section');
+                const overlay = document.createElement('div');
+                overlay.className = 'lock-overlay';
+                overlay.innerHTML = `
+                    <div class="lock-message-card">
+                        <div><i class="fas fa-lock" style="font-size: 2rem; color: #fbbf24; margin-bottom: 10px;"></i></div>
+                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Quota Exceeded</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">You've run out of free quota. Subscribe to unlock unlimited predictions.</div>
                         <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
                     </div>
                 `;

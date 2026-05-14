@@ -148,7 +148,30 @@ const AuthManager = {
 
     showModal() { document.getElementById('authModal').classList.remove('hidden'); },
     hideModal() { document.getElementById('authModal').classList.add('hidden'); },
-    showUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); },
+    showUpgradeModal() { 
+        const isPremium = this.user && this.user.tier === 'premium';
+        
+        const titleEl = document.getElementById('premiumModalTitle');
+        const descEl = document.getElementById('premiumModalDesc');
+        const btnTextEl = document.getElementById('redeemBtnText');
+        const promoInput = document.getElementById('promoCodeInput');
+
+        if (titleEl && descEl) {
+            if (isPremium) {
+                titleEl.innerHTML = 'Premium Active <i class="fas fa-check-circle" style="color: #34d399; font-size: 1.5rem; margin-left: 8px;"></i>';
+                descEl.textContent = "You are currently enjoying unlimited AI analytics and precision insights. Redeem another code to extend your subscription.";
+                if (btnTextEl) btnTextEl.textContent = 'Extend';
+                if (promoInput) promoInput.placeholder = 'ENTER EXTENSION CODE';
+            } else {
+                titleEl.innerHTML = '<i class="fas fa-gem" style="color: var(--green-400);"></i> LuntiAI Premium';
+                descEl.textContent = "Elevate your farm's productivity with unlimited AI analytics and precision insights.";
+                if (btnTextEl) btnTextEl.textContent = 'Unlock';
+                if (promoInput) promoInput.placeholder = 'ENTER PROMO CODE';
+            }
+        }
+
+        document.getElementById('upgradeModal').classList.remove('hidden'); 
+    },
     hideUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
 };
 
@@ -160,48 +183,21 @@ const PremiumGate = {
         }
 
         const isPremium = AuthManager.user && AuthManager.user.tier === 'premium';
-
-        // 1. Premium-Only Features (Always locked for free users)
-        const premiumTargets = ['#premiumFeaturesGroup'];
         
-        premiumTargets.forEach(selector => {
+        // Reset all locks first
+        ['#premiumFeaturesGroup', '#altCropsSection', '#probChartContainer', '#extendedResultsGroup'].forEach(selector => {
             const el = document.querySelector(selector);
-            if (!el || el.innerHTML.trim() === '' || el.classList.contains('hidden')) return;
-
-            // Clean existing locks
-            el.classList.remove('locked-section');
-            const existingLock = el.querySelector('.lock-overlay');
-            if (existingLock) existingLock.remove();
-
-            if (!isPremium) {
-                el.classList.add('locked-section');
-                const overlay = document.createElement('div');
-                overlay.className = 'lock-overlay';
-                overlay.innerHTML = `
-                    <div class="lock-message-card">
-                        <div><i class="fas fa-gem" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
-                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. Upgrade to unlock SHAP analysis, ROI, and detailed fertilizer logic.</div>
-                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
-                    </div>
-                `;
-                el.appendChild(overlay);
+            if (el) {
+                el.classList.remove('locked-section');
+                const lock = el.querySelector('.lock-overlay');
+                if (lock) lock.remove();
             }
         });
 
-        // 2. Quota-Limited Features (Locked only when free quota is exhausted)
-        const quotaTargets = ['#altCropsSection', '#probChartContainer'];
-        
-        quotaTargets.forEach(selector => {
-            const el = document.querySelector(selector);
-            if (!el || el.innerHTML.trim() === '' || el.classList.contains('hidden')) return;
-
-            // Clean existing locks
-            el.classList.remove('locked-section');
-            const existingLock = el.querySelector('.lock-overlay');
-            if (existingLock) existingLock.remove();
-
-            if (result.is_quota_limited && !isPremium) {
+        if (result.is_quota_limited && !isPremium) {
+            // Lock the ENTIRE extended results area with Quota Exceeded
+            const el = document.getElementById('extendedResultsGroup');
+            if (el && !el.classList.contains('hidden') && el.innerHTML.trim() !== '') {
                 el.classList.add('locked-section');
                 const overlay = document.createElement('div');
                 overlay.className = 'lock-overlay';
@@ -209,13 +205,30 @@ const PremiumGate = {
                     <div class="lock-message-card">
                         <div><i class="fas fa-lock" style="font-size: 2rem; color: #fbbf24; margin-bottom: 10px;"></i></div>
                         <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Quota Exceeded</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">You've run out of free quota. Subscribe to unlock unlimited predictions.</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">You've run out of free quota. Subscribe to unlock unlimited predictions and premium insights.</div>
                         <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
                     </div>
                 `;
                 el.appendChild(overlay);
             }
-        });
+        } else if (!isPremium) {
+            // Just lock premium features group
+            const el = document.getElementById('premiumFeaturesGroup');
+            if (el && !el.classList.contains('hidden') && el.innerHTML.trim() !== '') {
+                el.classList.add('locked-section');
+                const overlay = document.createElement('div');
+                overlay.className = 'lock-overlay';
+                overlay.innerHTML = `
+                    <div class="lock-message-card">
+                        <div><i class="fas fa-gem" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
+                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. Upgrade to unlock Prediction Confidence, SHAP analysis, ROI, and detailed fertilizer logic.</div>
+                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
+                    </div>
+                `;
+                el.appendChild(overlay);
+            }
+        }
     }
 };
 
@@ -902,7 +915,7 @@ function renderResults(result) {
     const locMsg = `${t('msg_prefix')} <strong>${result.best_crop}</strong> ${t('msg_suffix')}`;
 
     let warningHtml = '';
-    if (result.maturity_warning) {
+    if (result.maturity_warning && result.maturity_years_to_first_harvest) {
         warningHtml = `
             <div class="warning-banner" style="margin-top: 16px;">
                 <i class="fas fa-exclamation-triangle"></i>

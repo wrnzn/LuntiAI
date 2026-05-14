@@ -196,21 +196,23 @@ TREE_CROP_METADATA = {
         "maturity_years_to_first_harvest": "6-8",
         "intercropping": ["Cacao"],
     },
-    "Coffee": {
+    "Cacao": {
         "maturity_years_to_first_harvest": "3-4",
-        "intercropping": ["Banana"],
+        "intercropping": ["Banana", "Coconut"],
+    },
+    "Durian": {
+        "maturity_years_to_first_harvest": "7-10",
+        "intercropping": ["Banana", "Cacao"],
     },
     "Mango": {
         "maturity_years_to_first_harvest": "5-7",
         "intercropping": ["Vegetables"],
     },
-    "Apple": {"maturity_years_to_first_harvest": None, "intercropping": []},
-    "Orange": {"maturity_years_to_first_harvest": None, "intercropping": []},
-    "Papaya": {"maturity_years_to_first_harvest": None, "intercropping": []},
 }
 ROOT_CROPS = {"Cassava", "Sweet Potato"}
 SHORT_CYCLE_CROPS = {
-    "Rice", "Corn", "Mungbean", "Lentil", "Banana", "Cotton", "Jute",
+    "Rice", "Corn", "Banana", "Papaya", "Eggplant", "Tomato",
+    "Mungbean", "Lentil", "Cotton", "Jute",
     "Watermelon", "Pomegranate", "Grapes", "Maize", "Chickpea",
     "Kidney Beans", "Pigeon Peas", "Moth Beans", "Black Gram",
 }

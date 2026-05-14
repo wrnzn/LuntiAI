@@ -11,6 +11,8 @@ barangay, and our AI model recommends the best crop to plant based on your local
 soil profile and live weather conditions.
 
 ### Key Features
+- **Mobile-First UX/UI** — Touch-optimized interface with thumb-zone bottom sheets and responsive breakpoints
+- **Premium Tier Locking** — Blurred UI gating for advanced SHAP and ROI metrics
 - **23 Tagum Barangay Profiles** — Pre-mapped soil data (NPK, OM, pH, soil type)
 - **Live Weather Integration** — Real-time temperature, humidity via OpenWeatherMap
 - **Random Forest ML Model** — 85.62% accuracy, trained on 120,000+ data points

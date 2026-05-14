@@ -88,7 +88,7 @@ def test_free_user_quota_soft_lock_redeem_and_history(client):
         assert body["top_predictions"]
         assert body["fertilizer_recommendations"]
         assert body["crop_economics"]
-        assert body["intercropping"] is None
+        assert "Cacao" in body["intercropping"]
         assert body["is_quota_limited"] is False
         assert body["quota_remaining"] == expected_remaining
 
@@ -99,10 +99,10 @@ def test_free_user_quota_soft_lock_redeem_and_history(client):
     assert locked_body["confidence"] == 90.0
     assert locked_body["is_quota_limited"] is True
     assert locked_body["quota_remaining"] == 0
-    assert locked_body["top_predictions"] is None
-    assert locked_body["fertilizer_recommendations"] is None
-    assert locked_body["shap_explanation"] is None
-    assert locked_body["crop_economics"] is None
+    # Data still returned — frontend handles gating visually
+    assert locked_body["top_predictions"] is not None
+    assert locked_body["fertilizer_recommendations"] is not None
+    assert locked_body["crop_economics"] is not None
 
     free_history = client.get("/history", headers=headers)
     assert free_history.status_code == 403

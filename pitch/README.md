@@ -72,6 +72,7 @@ decisions.
    - The **best crop** with confidence percentage
    - **Explainable AI (SHAP) Insights** showing why the crop was chosen
    - **Top 5 alternative crops** ranked by suitability
+   - **Tree Crop Maturity Advisories** with estimated timelines to first harvest
    - **Fertilizer advice** with specific products available at Tagum agrivet stores
    - **DA-CRA Compliant ROI Calculator** utilizing structured Region XI production costs and up-to-date labor rates (Wage Order RB XI-24 at ₱515/day)
 
@@ -88,7 +89,7 @@ and integrating live weather APIs.
 | Explainability | SHAP (SHapley Additive exPlanations) for AI transparency |
 | Dataset | 120,000 rows, 12 crops, 8 features (incl. OM) — synthetic data |
 | Backend | FastAPI (Python) — RESTful API with Swagger documentation |
-| Frontend | HTML/CSS/JavaScript — Dark-mode, responsive, localized (EN/TL/CEB) |
+| Frontend | HTML/CSS/Vanilla JS — Mobile-first, UX/UI optimized (touch targets, bottom sheets), localized (EN/TL/CEB) |
 | Economics | DA-CRA Compliance Engine (TCP structured per DA Region XI standards) |
 | Weather | OpenWeatherMap API — Real-time temperature, humidity, conditions |
 | Data Sources | BSWM, PAGASA, PhilRice, DA Technoguides, PCA |

@@ -1,20 +1,21 @@
 """
-PostgreSQL persistence for LuntiAI accounts, quotas, and prediction history.
-Migrated from SQLite to psycopg2 for Neon/Vercel deployment.
+SQLite persistence for LuntiAI accounts, quotas, and prediction history.
 """
 
 import json
 import os
 import re
+import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
-import psycopg2
-import psycopg2.extras
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
+DB_PATH = os.environ.get(
+    "LUNTIAI_DB_PATH",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "users.db"),
+)
 
 FREE_DAILY_QUOTA = 3
 PROMO_CODE = "LUNTIAI2026"
@@ -22,8 +23,10 @@ PHT = ZoneInfo("Asia/Manila")
 PHONE_RE = re.compile(r"^(?:\+63|63|0)9\d{9}$")
 
 
-def _connect() -> psycopg2.extensions.connection:
-    conn = psycopg2.connect(DATABASE_URL)
+def _connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -31,17 +34,10 @@ def _connect() -> psycopg2.extensions.connection:
 def _connection():
     conn = _connect()
     try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
+        with conn:
+            yield conn
     finally:
         conn.close()
-
-
-def _cursor(conn):
-    return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 
 def _now_iso() -> str:
@@ -70,7 +66,7 @@ def normalize_phone(phone: str) -> str:
     return f"+63{compact[1:]}"
 
 
-def _row_to_user(row: Optional[dict]) -> Optional[dict[str, Any]]:
+def _row_to_user(row: Optional[sqlite3.Row]) -> Optional[dict[str, Any]]:
     if row is None:
         return None
     return {
@@ -85,20 +81,17 @@ def _row_to_user(row: Optional[dict]) -> Optional[dict[str, Any]]:
     }
 
 
-def _get_user_by_phone(phone: str) -> Optional[dict]:
+def _get_user_by_phone(phone: str) -> Optional[sqlite3.Row]:
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute("SELECT * FROM users WHERE phone = %s", (phone,))
-        return cur.fetchone()
+        return conn.execute("SELECT * FROM users WHERE phone = ?", (phone,)).fetchone()
 
 
 def init_db() -> None:
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute(
+        conn.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 phone TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
@@ -110,10 +103,10 @@ def init_db() -> None:
             )
             """
         )
-        cur.execute(
+        conn.execute(
             """
             CREATE TABLE IF NOT EXISTS prediction_history (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 barangay TEXT,
                 inputs_json TEXT NOT NULL,
@@ -141,20 +134,18 @@ def create_user(phone: str, name: str, password: str) -> dict[str, Any]:
     now = _now_iso()
     try:
         with _connection() as conn:
-            cur = _cursor(conn)
-            cur.execute(
+            cursor = conn.execute(
                 """
                 INSERT INTO users (
                     phone, name, password_hash, tier, query_count,
                     query_date, created_at, updated_at
                 )
-                VALUES (%s, %s, %s, 'free', 0, %s, %s, %s)
-                RETURNING id
+                VALUES (?, ?, ?, 'free', 0, ?, ?, ?)
                 """,
                 (normalized_phone, clean_name, hash_password(password), _today_pht(), now, now),
             )
-            user_id = cur.fetchone()["id"]
-    except psycopg2.errors.UniqueViolation as exc:
+            user_id = cursor.lastrowid
+    except sqlite3.IntegrityError as exc:
         raise ValueError("Phone already registered") from exc
 
     user = get_user(user_id)
@@ -178,9 +169,7 @@ def authenticate_user(phone: str, password: str) -> Optional[dict[str, Any]]:
 
 def get_user(user_id: int) -> Optional[dict[str, Any]]:
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-        row = cur.fetchone()
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return _row_to_user(row)
 
 
@@ -194,21 +183,21 @@ def update_user(user_id: int, fields: dict[str, Any]) -> dict[str, Any]:
         name = str(fields["name"]).strip()
         if not name:
             raise ValueError("Name is required")
-        updates.append("name = %s")
+        updates.append("name = ?")
         values.append(name)
 
     if "password" in fields and fields["password"]:
         password = str(fields["password"])
         if len(password) < 8:
             raise ValueError("Password must be at least 8 characters")
-        updates.append("password_hash = %s")
+        updates.append("password_hash = ?")
         values.append(hash_password(password))
 
     if "tier" in fields and fields["tier"] is not None:
         tier = str(fields["tier"]).lower()
         if tier not in {"free", "premium"}:
             raise ValueError("Tier must be free or premium")
-        updates.append("tier = %s")
+        updates.append("tier = ?")
         values.append(tier)
 
     if not updates:
@@ -217,17 +206,16 @@ def update_user(user_id: int, fields: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("User not found")
         return user
 
-    updates.append("updated_at = %s")
+    updates.append("updated_at = ?")
     values.append(_now_iso())
     values.append(user_id)
 
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute(
-            f"UPDATE users SET {', '.join(updates)} WHERE id = %s",
+        cursor = conn.execute(
+            f"UPDATE users SET {', '.join(updates)} WHERE id = ?",
             tuple(values),
         )
-        if cur.rowcount == 0:
+        if cursor.rowcount == 0:
             raise ValueError("User not found")
 
     user = get_user(user_id)
@@ -238,9 +226,8 @@ def update_user(user_id: int, fields: dict[str, Any]) -> dict[str, Any]:
 
 def delete_user(user_id: int) -> bool:
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        return cur.rowcount > 0
+        cursor = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        return cursor.rowcount > 0
 
 
 def get_quota_status(user_id: int) -> dict[str, Any]:
@@ -258,10 +245,8 @@ def get_quota_status(user_id: int) -> dict[str, Any]:
 def check_and_increment_quota(user_id: int) -> dict[str, Any]:
     conn = _connect()
     try:
-        conn.autocommit = False
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM users WHERE id = %s FOR UPDATE", (user_id,))
-        row = cur.fetchone()
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if row is None:
             raise ValueError("User not found")
         if row["tier"] == "premium":
@@ -275,11 +260,11 @@ def check_and_increment_quota(user_id: int) -> dict[str, Any]:
             return {"allowed": False, "remaining": 0, "resets_at": _quota_resets_at()}
 
         next_count = current_count + 1
-        cur.execute(
+        conn.execute(
             """
             UPDATE users
-            SET query_count = %s, query_date = %s, updated_at = %s
-            WHERE id = %s
+            SET query_count = ?, query_date = ?, updated_at = ?
+            WHERE id = ?
             """,
             (next_count, today, _now_iso(), user_id),
         )
@@ -299,15 +284,13 @@ def check_and_increment_quota(user_id: int) -> dict[str, Any]:
 def record_prediction(user_id: int, inputs: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     created_at = _now_iso()
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute(
+        cursor = conn.execute(
             """
             INSERT INTO prediction_history (
                 user_id, barangay, inputs_json, best_crop, confidence,
                 crop_category, full_response_json, created_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
@@ -320,25 +303,23 @@ def record_prediction(user_id: int, inputs: dict[str, Any], result: dict[str, An
                 created_at,
             ),
         )
-        history_id = cur.fetchone()["id"]
+        history_id = cursor.lastrowid
     return {"id": history_id, "created_at": created_at}
 
 
 def get_prediction_history(user_id: int, limit: int = 50) -> list[dict[str, Any]]:
     safe_limit = max(1, min(int(limit), 100))
     with _connection() as conn:
-        cur = _cursor(conn)
-        cur.execute(
+        rows = conn.execute(
             """
             SELECT *
             FROM prediction_history
-            WHERE user_id = %s
+            WHERE user_id = ?
             ORDER BY created_at DESC, id DESC
-            LIMIT %s
+            LIMIT ?
             """,
             (user_id, safe_limit),
-        )
-        rows = cur.fetchall()
+        ).fetchall()
 
     history = []
     for row in rows:

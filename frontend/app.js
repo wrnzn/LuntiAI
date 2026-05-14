@@ -48,9 +48,14 @@ const AuthManager = {
                 this.fetchProfile();
                 showToast('Login successful!', 'success');
             } else {
-                let errorMsg = 'Login failed';
-                if (typeof data.detail === 'string') errorMsg = data.detail;
-                else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || 'Validation error';
+                let errorMsg = 'Login failed. Please try again.';
+                if (typeof data.detail === 'string') {
+                    errorMsg = data.detail === 'Invalid credentials' 
+                        ? 'Wrong phone number or password. Please try again.' 
+                        : data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorMsg = 'Please ensure your phone number and password are correct.';
+                }
                 showToast(errorMsg, 'error');
             }
         } catch (e) {
@@ -73,9 +78,12 @@ const AuthManager = {
                 this.fetchProfile();
                 showToast('Registration successful!', 'success');
             } else {
-                let errorMsg = 'Registration failed';
-                if (typeof data.detail === 'string') errorMsg = data.detail;
-                else if (Array.isArray(data.detail)) errorMsg = data.detail[0]?.msg || 'Validation error';
+                let errorMsg = 'Registration failed. Please try again.';
+                if (typeof data.detail === 'string') {
+                    errorMsg = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorMsg = 'Please check your details. Phone must be 11 digits and password at least 8 characters.';
+                }
                 showToast(errorMsg, 'error');
             }
         } catch (e) {

@@ -148,7 +148,7 @@ const PremiumGate = {
         const isPremium = AuthManager.user && AuthManager.user.tier === 'premium';
 
         // 1. Premium-Only Features (Always locked for free users)
-        const premiumTargets = ['#shapSection', '#fertilizerSection', '#economicsSection', '#econChartContainer'];
+        const premiumTargets = ['#premiumFeaturesGroup'];
         
         premiumTargets.forEach(selector => {
             const el = document.querySelector(selector);

@@ -1685,7 +1685,6 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     background: rgba(0, 0, 0, 0.3);
     z-index: 10;
     text-align: center;
@@ -1694,6 +1693,9 @@ body::before {
 }
 
 .lock-message-card {
+    position: sticky;
+    top: 30vh; /* Keeps it in view near the top of the viewport when scrolling */
+    margin-top: 40px; /* Base margin for short sections */
     background: var(--bg-card);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;

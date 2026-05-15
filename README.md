@@ -6,6 +6,15 @@ colorTo: yellow
 sdk: docker
 pinned: false
 ---
+---
+title: LuntiAI Crop Model
+emoji: 🌱
+colorFrom: green
+colorTo: yellow
+sdk: docker
+pinned: false
+---
+
 # LuntiAI — Precision Agriculture for Tagum City
 
 > AI-powered crop recommendation system for farmers in Tagum City, Davao del Norte.

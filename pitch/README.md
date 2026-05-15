@@ -3,6 +3,8 @@
 
 > *Prepared for the Technopreneurship Academic Festival 2026*
 
+🚀 **Live Prototype Demo:** [https://owaruurawo-luntiai-crop-model.hf.space/app](https://owaruurawo-luntiai-crop-model.hf.space/app)
+
 ---
 
 ## 1. Statement of the Problem

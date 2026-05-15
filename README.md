@@ -6,19 +6,19 @@ colorTo: yellow
 sdk: docker
 pinned: false
 ---
----
-title: LuntiAI Crop Model
-emoji: 🌱
-colorFrom: green
-colorTo: yellow
-sdk: docker
-pinned: false
----
 
 # LuntiAI — Precision Agriculture for Tagum City
 
 > AI-powered crop recommendation system for farmers in Tagum City, Davao del Norte.
 > Built for the Technopreneurship Academic Festival 2026.
+
+## Live Demo
+
+🚀 **Try LuntiAI online (Hugging Face Spaces):**
+- **Web App UI:** [https://owaruurawo-luntiai-crop-model.hf.space/app](https://owaruurawo-luntiai-crop-model.hf.space/app)
+- **API Base URL:** [https://owaruurawo-luntiai-crop-model.hf.space](https://owaruurawo-luntiai-crop-model.hf.space)
+
+---
 
 ## What is LuntiAI?
 

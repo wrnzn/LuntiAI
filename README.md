@@ -1,11 +1,5 @@
----
-title: LuntiAI Crop Model
-emoji: 🌱
-colorFrom: green
-colorTo: yellow
-sdk: docker
-pinned: false
----
+<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/703d41ec-1ffa-4580-a6b0-b9825fe04780" />
+
 
 # LuntiAI — Precision Agriculture for Tagum City
 

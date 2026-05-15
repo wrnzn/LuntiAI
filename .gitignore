@@ -1,4 +1,4 @@
-*.pkl
+# *.pkl (Removing to push to Hugging Face)
 __pycache__/
 .env
 .agents/skills/

@@ -1,3 +1,11 @@
+---
+title: LuntiAI Crop Model
+emoji: 🌱
+colorFrom: green
+colorTo: yellow
+sdk: docker
+pinned: false
+---
 # LuntiAI — Precision Agriculture for Tagum City
 
 > AI-powered crop recommendation system for farmers in Tagum City, Davao del Norte.
@@ -133,3 +141,4 @@ Technopreneurship Course — Academic Festival 2026
 
 This project is for academic purposes. All agricultural data ranges are derived
 from publicly available Philippine government sources (BSWM, PAGASA, DA, PhilRice, PCA).
+

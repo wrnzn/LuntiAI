@@ -11,6 +11,9 @@
 const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
     ? 'http://localhost:8080'
     : '';  // Relative path for deployed version
+const AUTH_TOKEN_KEY = 'luntiai-token';
+const AUTH_USER_KEY = 'luntiai-user';
+const AUTH_QUOTA_KEY = 'luntiai-quota';
 
 // Crop emoji mapping
 const CROP_ICONS = {
@@ -332,8 +335,267 @@ const resultHero       = document.getElementById('resultHero');
 const altCropsSection  = document.getElementById('altCropsSection');
 const shapSection      = document.getElementById('shapSection');
 const fertilizerSection= document.getElementById('fertilizerSection');
+const accountControls  = document.getElementById('accountControls');
+const quotaPanel       = document.getElementById('quotaPanel');
+const authModal        = document.getElementById('authModal');
+const accountModal     = document.getElementById('accountModal');
+const loginForm        = document.getElementById('loginForm');
+const registerForm     = document.getElementById('registerForm');
+const redeemForm       = document.getElementById('redeemForm');
+const accountSummary   = document.getElementById('accountSummary');
+const historyList      = document.getElementById('historyList');
+const resultsLockNotice = document.getElementById('resultsLockNotice');
+const economicsSection = document.getElementById('economicsSection');
+const econChartContainer = document.getElementById('econChartContainer');
+const probabilityChartSection = document.getElementById('probabilityChartSection');
 
 let probChartInstance = null;
+let currentSession = {
+    user: readJSON(AUTH_USER_KEY),
+    quota: readJSON(AUTH_QUOTA_KEY),
+};
+let lastFocusedElement = null;
+
+function readJSON(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function setSession(data) {
+    if (data.access_token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, data.access_token);
+    }
+    currentSession = {
+        user: data.user || currentSession.user,
+        quota: data.quota || currentSession.quota,
+    };
+    if (currentSession.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentSession.user));
+    if (currentSession.quota) localStorage.setItem(AUTH_QUOTA_KEY, JSON.stringify(currentSession.quota));
+    renderAuthState();
+}
+
+function clearSession() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_QUOTA_KEY);
+    currentSession = { user: null, quota: null };
+    renderAuthState();
+}
+
+function authHeaders(extra = {}) {
+    const token = getToken();
+    return {
+        ...extra,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+}
+
+async function authFetch(path, options = {}) {
+    const headers = authHeaders(options.headers || {});
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    if (res.status === 401) {
+        clearSession();
+    }
+    return res;
+}
+
+function formatResetTime(value) {
+    if (!value) return 'tomorrow';
+    try {
+        return new Intl.DateTimeFormat('en-PH', {
+            hour: 'numeric',
+            minute: '2-digit',
+            month: 'short',
+            day: 'numeric',
+        }).format(new Date(value));
+    } catch (_) {
+        return 'tomorrow';
+    }
+}
+
+function quotaLabel(quota = currentSession.quota, user = currentSession.user) {
+    if (!user) return '3 free analyses/day';
+    if (user.tier === 'premium' || quota?.remaining === -1) return 'Unlimited analyses';
+    const remaining = Math.max(Number(quota?.remaining ?? 0), 0);
+    return `${remaining} free ${remaining === 1 ? 'analysis' : 'analyses'} left`;
+}
+
+function isPremiumUser(user = currentSession.user, quota = currentSession.quota) {
+    return Boolean(user && (user.tier === 'premium' || quota?.remaining === -1));
+}
+
+function isQuotaExhausted(user = currentSession.user, quota = currentSession.quota) {
+    if (!user || isPremiumUser(user, quota)) return false;
+    return Math.max(Number(quota?.remaining ?? 0), 0) <= 0;
+}
+
+function getResultAccessMode() {
+    if (!currentSession.user) return 'signed-out';
+    if (isPremiumUser()) return 'premium';
+    if (isQuotaExhausted()) return 'locked';
+    return 'free';
+}
+
+function getPremiumSections() {
+    return Array.from(document.querySelectorAll('[data-premium-section]'));
+}
+
+function updateSubmitState() {
+    if (!submitBtn) return;
+    const accessMode = getResultAccessMode();
+    submitBtn.classList.toggle('quota-locked', accessMode === 'locked');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = accessMode === 'locked'
+        ? '<i class="fas fa-lock"></i> Unlock premium to analyze'
+        : `<i class="fas fa-magnifying-glass-chart"></i> ${t('btn_predict')}`;
+}
+
+function applyResultAccessState(accessMode = getResultAccessMode()) {
+    if (!resultsSection) return;
+
+    resultsSection.classList.remove('access-free', 'access-locked', 'access-premium');
+    if (accessMode === 'free') resultsSection.classList.add('access-free');
+    if (accessMode === 'locked') resultsSection.classList.add('access-locked');
+    if (accessMode === 'premium') resultsSection.classList.add('access-premium');
+
+    getPremiumSections().forEach(section => {
+        const hasContent = section.innerHTML.trim() !== '' && !section.classList.contains('hidden');
+        section.classList.toggle('premium-locked', accessMode === 'free' && hasContent);
+    });
+
+    if (!resultsLockNotice) return;
+    if (accessMode === 'locked') {
+        resultsLockNotice.classList.remove('hidden');
+        resultsLockNotice.innerHTML = `
+            <strong>Daily free quota used</strong>
+            <span>You have reached today's free analyses. Upgrade to premium or wait until ${escapeHTML(formatResetTime(currentSession.quota?.resets_at))} to predict again.</span>
+            <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
+        `;
+    } else {
+        resultsLockNotice.classList.add('hidden');
+        resultsLockNotice.innerHTML = '';
+    }
+}
+
+function renderAuthState() {
+    const user = currentSession.user;
+    const quota = currentSession.quota;
+
+    if (accountControls) {
+        if (user) {
+            accountControls.innerHTML = `
+                <button class="account-pill" type="button" id="accountOpenBtn">
+                    <span class="account-avatar" aria-hidden="true">${escapeHTML(user.name?.[0] || 'U')}</span>
+                    <span>
+                        <strong>${escapeHTML(user.name || 'LuntiAI user')}</strong>
+                        <small>${escapeHTML(quotaLabel(quota, user))}</small>
+                    </span>
+                    <span class="tier-badge ${user.tier === 'premium' ? 'premium' : 'free'}">${escapeHTML(user.tier)}</span>
+                </button>
+            `;
+        } else {
+            accountControls.innerHTML = `
+                <span class="account-free-cue">3 free analyses/day</span>
+                <button class="btn btn-secondary btn-sm" type="button" data-auth-open="login">Log in</button>
+                <button class="btn btn-primary btn-sm" type="button" data-auth-open="register">Create account</button>
+            `;
+        }
+    }
+
+    if (quotaPanel) {
+        if (!user) {
+            quotaPanel.className = 'quota-panel signed-out';
+            quotaPanel.innerHTML = `
+                <div>
+                    <strong>Sign in to analyze</strong>
+                    <span>Create an account to use 3 free crop analyses per day.</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" type="button" data-auth-open="login">Log in</button>
+            `;
+        } else if (user.tier === 'premium' || quota?.remaining === -1) {
+            quotaPanel.className = 'quota-panel premium';
+            quotaPanel.innerHTML = `
+                <div>
+                    <strong>Premium active</strong>
+                    <span>Unlimited crop analyses and prediction history are unlocked.</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" type="button" id="historyQuickBtn">View history</button>
+            `;
+        } else {
+            const remaining = Math.max(Number(quota?.remaining ?? 0), 0);
+            quotaPanel.className = remaining === 0 ? 'quota-panel limited' : 'quota-panel free';
+            quotaPanel.innerHTML = `
+                <div>
+                    <strong>${remaining === 0 ? 'Daily quota used' : quotaLabel(quota, user)}</strong>
+                    <span>${remaining === 0 ? `Unlock premium or wait until ${formatResetTime(quota?.resets_at)}.` : 'Premium unlocks unlimited analyses and history.'}</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" type="button" data-account-open>${remaining === 0 ? 'Unlock premium' : 'Account'}</button>
+            `;
+        }
+    }
+
+    renderAccountSummary();
+    updateSubmitState();
+    if (window.lastResult && !resultsSection.classList.contains('hidden')) {
+        applyResultAccessState();
+    }
+}
+
+function renderAccountSummary() {
+    if (!accountSummary) return;
+    const user = currentSession.user;
+    if (!user) {
+        accountSummary.innerHTML = `
+            <div class="empty-state">
+                <strong>No account loaded</strong>
+                <span>Log in to manage quota and history.</span>
+            </div>
+        `;
+        return;
+    }
+    accountSummary.innerHTML = `
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span>Name</span>
+                <strong>${escapeHTML(user.name || 'LuntiAI user')}</strong>
+            </div>
+            <div class="summary-item">
+                <span>Phone</span>
+                <strong>${escapeHTML(user.phone || '—')}</strong>
+            </div>
+            <div class="summary-item">
+                <span>Plan</span>
+                <strong><span class="tier-badge ${user.tier === 'premium' ? 'premium' : 'free'}">${escapeHTML(user.tier)}</span></strong>
+            </div>
+            <div class="summary-item">
+                <span>Quota</span>
+                <strong>${escapeHTML(quotaLabel())}</strong>
+            </div>
+            <div class="summary-item">
+                <span>Reset</span>
+                <strong>${currentSession.quota?.remaining === -1 ? 'Unlimited' : escapeHTML(formatResetTime(currentSession.quota?.resets_at))}</strong>
+            </div>
+        </div>
+    `;
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    }[char]));
+}
 
 function setApiStatus(mode, label) {
     const status = document.getElementById('apiStatus');
@@ -354,8 +616,11 @@ function setApiStatus(mode, label) {
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     initLocalization();
+    initAuthUI();
+    renderAuthState();
     await loadBarangays();
     checkBackendHealth();
+    await refreshMe();
     initInteractivity();
 
     // Language toggle buttons
@@ -363,6 +628,234 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('click', () => applyLang(btn.dataset.lang));
     });
 });
+
+function initAuthUI() {
+    document.addEventListener('click', (event) => {
+        const authOpen = event.target.closest('[data-auth-open]');
+        if (authOpen) {
+            openAuthModal(authOpen.dataset.authOpen || 'login');
+            return;
+        }
+
+        const tab = event.target.closest('[data-auth-tab]');
+        if (tab) {
+            setAuthPanel(tab.dataset.authTab || 'login');
+            return;
+        }
+
+        if (event.target.closest('[data-modal-close]')) {
+            closeModals();
+            return;
+        }
+
+        if (event.target === authModal || event.target === accountModal) {
+            closeModals();
+            return;
+        }
+
+        if (event.target.closest('#accountOpenBtn') || event.target.closest('[data-account-open]')) {
+            openAccountModal();
+            return;
+        }
+
+        if (event.target.closest('#historyQuickBtn')) {
+            openAccountModal();
+            loadHistory();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeModals();
+    });
+
+    loginForm?.addEventListener('submit', handleLogin);
+    registerForm?.addEventListener('submit', handleRegister);
+    redeemForm?.addEventListener('submit', handleRedeem);
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        clearSession();
+        closeModals();
+        showToast('Logged out.', 'info');
+    });
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
+    document.getElementById('loadHistoryBtn')?.addEventListener('click', loadHistory);
+}
+
+function openAuthModal(mode = 'login', message = '') {
+    lastFocusedElement = document.activeElement;
+    setAuthPanel(mode);
+    if (message) {
+        const desc = document.getElementById('authModalDesc');
+        if (desc) desc.textContent = message;
+    }
+    authModal?.classList.remove('hidden');
+    setTimeout(() => {
+        const field = mode === 'register'
+            ? document.getElementById('registerName')
+            : document.getElementById('loginPhone');
+        field?.focus();
+    }, 30);
+}
+
+function setAuthPanel(mode = 'login') {
+    const normalized = mode === 'register' ? 'register' : 'login';
+    document.querySelectorAll('[data-auth-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.authTab === normalized);
+    });
+    document.querySelectorAll('[data-auth-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.authPanel !== normalized);
+    });
+    const title = document.getElementById('authModalTitle');
+    const desc = document.getElementById('authModalDesc');
+    if (title) title.textContent = normalized === 'register' ? 'Create your LuntiAI account' : 'Log in to LuntiAI';
+    if (desc) {
+        desc.textContent = normalized === 'register'
+            ? 'Register to use 3 free analyses per day and unlock premium later.'
+            : 'Sign in to run crop analyses and keep your history.';
+    }
+}
+
+function openAccountModal() {
+    if (!currentSession.user) {
+        openAuthModal('login');
+        return;
+    }
+    lastFocusedElement = document.activeElement;
+    renderAccountSummary();
+    accountModal?.classList.remove('hidden');
+    setTimeout(() => document.getElementById('redeemCode')?.focus(), 30);
+}
+
+function closeModals() {
+    authModal?.classList.add('hidden');
+    accountModal?.classList.add('hidden');
+    lastFocusedElement?.focus?.();
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    await submitAuth('/login', loginForm, 'Welcome back.');
+}
+
+async function handleRegister(event) {
+    event.preventDefault();
+    await submitAuth('/register', registerForm, 'Account created.');
+}
+
+async function submitAuth(path, form, successMessage) {
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+    try {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+        setSession(data);
+        form.reset();
+        closeModals();
+        showToast(successMessage, 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function refreshMe() {
+    if (!getToken()) {
+        renderAuthState();
+        return;
+    }
+    try {
+        const res = await authFetch('/me');
+        if (!res.ok) throw new Error('Session expired');
+        setSession(await res.json());
+    } catch (err) {
+        clearSession();
+    }
+}
+
+async function handleRedeem(event) {
+    event.preventDefault();
+    const code = new FormData(redeemForm).get('code');
+    if (!code) {
+        showToast('Enter a redeem code.', 'error');
+        return;
+    }
+    try {
+        const res = await authFetch('/redeem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not redeem code');
+        setSession(data);
+        redeemForm.reset();
+        showToast('Premium unlocked.', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function handleDeleteAccount() {
+    if (!currentSession.user) return;
+    const confirmed = window.confirm('Delete this LuntiAI account and prediction history? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+        const res = await authFetch('/me', { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || 'Could not delete account');
+        clearSession();
+        closeModals();
+        showToast('Account deleted.', 'info');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function loadHistory() {
+    if (!currentSession.user) {
+        openAuthModal('login');
+        return;
+    }
+    if (currentSession.user.tier !== 'premium') {
+        historyList.innerHTML = `
+            <div class="paywall-card">
+                <strong>History is a premium feature.</strong>
+                <span>Redeem <code>LUNTIAI2026</code> to unlock saved prediction history.</span>
+            </div>
+        `;
+        return;
+    }
+    historyList.innerHTML = `<div class="empty-state">Loading history...</div>`;
+    try {
+        const res = await authFetch('/history?limit=20');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not load history');
+        if (!data.history?.length) {
+            historyList.innerHTML = `
+                <div class="empty-state">
+                    <strong>No predictions yet</strong>
+                    <span>Run an analysis and it will appear here.</span>
+                </div>
+            `;
+            return;
+        }
+        historyList.innerHTML = data.history.map(item => `
+            <article class="history-item">
+                <div>
+                    <strong>${escapeHTML(item.best_crop)}</strong>
+                    <span>${escapeHTML(item.barangay || 'Manual input')} · ${Number(item.confidence).toFixed(2)}% confidence</span>
+                </div>
+                <time>${escapeHTML(formatResetTime(item.created_at))}</time>
+            </article>
+        `).join('');
+    } catch (err) {
+        historyList.innerHTML = `<div class="empty-state error">${escapeHTML(err.message)}</div>`;
+    }
+}
 
 async function loadBarangays() {
     try {
@@ -570,6 +1063,20 @@ cropForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (!getToken()) {
+        openAuthModal('login', 'Log in or create an account before running a crop analysis.');
+        showToast('Please log in to analyze your field data.', 'info');
+        return;
+    }
+
+    if (isQuotaExhausted()) {
+        applyResultAccessState('locked');
+        if (window.lastResult) resultsSection.classList.remove('hidden');
+        openAccountModal();
+        showToast('Your free quota is used for today. Unlock premium to continue.', 'info');
+        return;
+    }
+
     cropForm.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
 
     const formData = new FormData(cropForm);
@@ -604,7 +1111,7 @@ cropForm.addEventListener('submit', async (e) => {
     resultsSection.classList.add('hidden');
 
     try {
-        const res = await fetch(`${API_BASE}/predict`, {
+        const res = await authFetch('/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -614,8 +1121,18 @@ cropForm.addEventListener('submit', async (e) => {
         hideLoading();
 
         if (res.ok) {
+            currentSession.quota = {
+                allowed: !result.is_quota_limited,
+                remaining: result.quota_remaining,
+                resets_at: result.quota_resets_at,
+            };
+            if (currentSession.quota) localStorage.setItem(AUTH_QUOTA_KEY, JSON.stringify(currentSession.quota));
             renderResults(result);
+            renderAuthState();
         } else {
+            if (res.status === 401) {
+                openAuthModal('login', 'Your session expired. Log in again to analyze.');
+            }
             showToast(result.detail || 'Prediction failed', 'error');
         }
     } catch (err) {
@@ -633,6 +1150,7 @@ cropForm.querySelectorAll('input').forEach(input => {
 // =============================================================================
 function renderResults(result) {
     window.lastResult = result; // Save for language toggles
+    const accessMode = getResultAccessMode();
 
     const iconClass = CROP_ICON_CLASSES[result.best_crop] || 'fa-seedling';
     const confTone = result.confidence >= 80 ? 'high' :
@@ -640,6 +1158,19 @@ function renderResults(result) {
     
     // Construct localized message
     const locMsg = `${t('msg_prefix')} <strong>${result.best_crop}</strong> ${t('msg_suffix')}`;
+    const paywallHTML = accessMode === 'locked' ? `
+        <div class="paywall-card result-paywall">
+            <strong>Free quota reached</strong>
+            <span>This report is now locked for the day. Unlock premium to keep analyzing and reveal the full decision report.</span>
+            <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
+        </div>
+    ` : accessMode === 'free' ? `
+        <div class="paywall-card result-paywall">
+            <strong>Free plan view</strong>
+            <span>Your top crop recommendation is visible. ROI, fertilizer advice, confidence charts, and alternatives are premium-only.</span>
+            <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
+        </div>
+    ` : '';
 
     resultHero.innerHTML = `
         <div class="result-hero confidence-${confTone}">
@@ -649,6 +1180,7 @@ function renderResults(result) {
             <div class="result-confidence">
                 <i class="fas fa-bullseye"></i> ${(result.confidence).toFixed(2)}% <span data-i18n="pred_confidence">${t('pred_confidence')}</span>
             </div>
+            ${paywallHTML}
         </div>
     `;
 
@@ -719,9 +1251,6 @@ function renderResults(result) {
     }
 
     // Business & ROI Economics
-    const econSection = document.getElementById('economicsSection');
-    const econChartContainer = document.getElementById('econChartContainer');
-    
     if (result.crop_economics) {
         const econ = result.crop_economics;
         
@@ -787,6 +1316,7 @@ function renderResults(result) {
 
     // Show results
     resultsSection.classList.remove('hidden');
+    applyResultAccessState(accessMode);
     setTimeout(() => {
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -1004,7 +1534,7 @@ function hideLoading() {
     loadingOverlay.classList.remove('active');
     loadingOverlay.setAttribute('aria-hidden', 'true');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = `<i class="fas fa-magnifying-glass-chart"></i> ${t('btn_predict')}`;
+    updateSubmitState();
 }
 
 function resetAll() {

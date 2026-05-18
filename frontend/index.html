@@ -40,6 +40,12 @@
                     <span>Checking API</span>
                 </div>
 
+                <div class="account-controls" id="accountControls" aria-live="polite">
+                    <span class="account-free-cue">3 free analyses/day</span>
+                    <button class="btn btn-secondary btn-sm" type="button" data-auth-open="login">Log in</button>
+                    <button class="btn btn-primary btn-sm" type="button" data-auth-open="register">Create account</button>
+                </div>
+
                 <div class="lang-selector" id="langToggle" aria-label="Language selector">
                     <button class="lang-btn active" type="button" data-lang="en">EN</button>
                     <button class="lang-btn" type="button" data-lang="tl">TL</button>
@@ -102,6 +108,14 @@
                             <span class="section-kicker">Step 2</span>
                             <h2 id="parametersTitle" data-i18n="soil_params_title">Soil & Climate Parameters</h2>
                             <p data-i18n="soil_params_desc">Auto-filled from your barangay. Adjust values if you have lab results.</p>
+                        </div>
+
+                        <div class="quota-panel" id="quotaPanel" aria-live="polite">
+                            <div>
+                                <strong>Sign in to analyze</strong>
+                                <span>Create an account to use 3 free crop analyses per day.</span>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" type="button" data-auth-open="login">Log in</button>
                         </div>
 
                         <form id="cropForm" novalidate>
@@ -232,6 +246,88 @@
             <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-hidden="true">
                 <div class="spinner"></div>
                 <div class="loading-text" data-i18n="loading_text">Analyzing soil conditions with AI model...</div>
+            </div>
+
+            <div class="modal-backdrop hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+                <div class="modal-sheet auth-sheet">
+                    <button class="modal-close" type="button" data-modal-close aria-label="Close">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                    <div class="section-heading compact">
+                        <span class="section-kicker">Account</span>
+                        <h2 id="authModalTitle">Access LuntiAI</h2>
+                        <p id="authModalDesc">Sign in or create an account to run crop analyses.</p>
+                    </div>
+
+                    <div class="auth-tabs" role="tablist" aria-label="Authentication options">
+                        <button class="auth-tab active" id="loginTab" type="button" data-auth-tab="login">Log in</button>
+                        <button class="auth-tab" id="registerTab" type="button" data-auth-tab="register">Create account</button>
+                    </div>
+
+                    <form class="auth-form" id="loginForm" data-auth-panel="login">
+                        <label class="form-label" for="loginPhone">PH mobile number</label>
+                        <input class="form-input" id="loginPhone" name="phone" autocomplete="tel" inputmode="tel" placeholder="09171234567" required>
+                        <label class="form-label" for="loginPassword">Password</label>
+                        <input class="form-input" id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="8" required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-right-to-bracket"></i>
+                            Log in
+                        </button>
+                    </form>
+
+                    <form class="auth-form hidden" id="registerForm" data-auth-panel="register">
+                        <label class="form-label" for="registerName">Full name</label>
+                        <input class="form-input" id="registerName" name="name" autocomplete="name" placeholder="Kiko Dela Cruz" required>
+                        <label class="form-label" for="registerPhone">PH mobile number</label>
+                        <input class="form-input" id="registerPhone" name="phone" autocomplete="tel" inputmode="tel" placeholder="09171234567" required>
+                        <label class="form-label" for="registerPassword">Password</label>
+                        <input class="form-input" id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="8" required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-user-plus"></i>
+                            Create account
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal-backdrop hidden" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+                <div class="modal-sheet account-sheet">
+                    <button class="modal-close" type="button" data-modal-close aria-label="Close">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                    <div class="section-heading compact">
+                        <span class="section-kicker">Account</span>
+                        <h2 id="accountModalTitle">Farm profile</h2>
+                        <p>Manage quota, premium access, and prediction history.</p>
+                    </div>
+
+                    <div class="account-summary" id="accountSummary"></div>
+
+                    <form class="redeem-form" id="redeemForm">
+                        <label class="form-label" for="redeemCode">Premium redeem code</label>
+                        <div class="inline-form">
+                            <input class="form-input" id="redeemCode" name="code" placeholder="LUNTIAI2026" autocomplete="off">
+                            <button class="btn btn-primary" type="submit">Redeem</button>
+                        </div>
+                    </form>
+
+                    <div class="history-toolbar">
+                        <button class="btn btn-secondary" type="button" id="loadHistoryBtn">
+                            <i class="fas fa-clock-rotate-left"></i>
+                            Load history
+                        </button>
+                        <button class="btn btn-secondary" type="button" id="logoutBtn">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
+                            Log out
+                        </button>
+                        <button class="btn btn-danger" type="button" id="deleteAccountBtn">
+                            <i class="fas fa-trash-can"></i>
+                            Delete account
+                        </button>
+                    </div>
+
+                    <div class="history-list" id="historyList"></div>
+                </div>
             </div>
 
             <section class="decision-report hidden" id="resultsSection" aria-labelledby="resultsTitle">

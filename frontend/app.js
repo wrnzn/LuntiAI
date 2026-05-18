@@ -9,322 +9,8 @@
 // CONFIG
 // =============================================================================
 const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
+    ? 'http://localhost:8080'
     : '';  // Relative path for deployed version
-
-// =============================================================================
-// AUTH & PREMIUM MANAGERS
-// =============================================================================
-const AuthManager = {
-    tokenKey: 'luntiai-jwt',
-    user: null,
-
-    init() {
-        this.updateBadge();
-        const token = this.getToken();
-        if (token) {
-            this.fetchProfile();
-        } else {
-            this.showModal();
-        }
-    },
-
-    getToken() { return localStorage.getItem(this.tokenKey); },
-    setToken(token) { localStorage.setItem(this.tokenKey, token); },
-    clearToken() { localStorage.removeItem(this.tokenKey); this.user = null; },
-
-    async login(phone, password) {
-        try {
-            const res = await fetch(`${API_BASE}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, password })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                this.setToken(data.access_token);
-                this.user = data.user;
-                this.hideModal();
-                this.fetchProfile();
-                showToast('Login successful!', 'success');
-            } else {
-                let errorMsg = 'Login failed. Please try again.';
-                if (typeof data.detail === 'string') {
-                    errorMsg = data.detail === 'Invalid credentials' 
-                        ? 'Wrong phone number or password. Please try again.' 
-                        : data.detail;
-                } else if (Array.isArray(data.detail)) {
-                    errorMsg = 'Please ensure your phone number and password are correct.';
-                }
-                showToast(errorMsg, 'error');
-            }
-        } catch (e) {
-            showToast('Network error during login', 'error');
-        }
-    },
-
-    async register(phone, name, password) {
-        try {
-            const res = await fetch(`${API_BASE}/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, name, password })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                this.setToken(data.access_token);
-                this.user = data.user;
-                this.hideModal();
-                this.fetchProfile();
-                showToast('Registration successful!', 'success');
-            } else {
-                let errorMsg = 'Registration failed. Please try again.';
-                if (typeof data.detail === 'string') {
-                    errorMsg = data.detail;
-                } else if (Array.isArray(data.detail)) {
-                    errorMsg = 'Please check your details. Phone must be 11 digits and password at least 8 characters.';
-                }
-                showToast(errorMsg, 'error');
-            }
-        } catch (e) {
-            showToast('Network error during registration', 'error');
-        }
-    },
-
-    async fetchProfile() {
-        try {
-            const res = await fetch(`${API_BASE}/me`, {
-                headers: { 'Authorization': `Bearer ${this.getToken()}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                this.user = data.user;
-                this.user.quota = data.quota;
-                this.updateBadge();
-            } else {
-                this.logout();
-            }
-        } catch (e) {
-            console.error('Failed to fetch profile', e);
-        }
-    },
-
-    updateBadge() {
-        const badge = document.getElementById('accountBadge');
-        const headerBadge = document.querySelector('.header-badge');
-        if (headerBadge) headerBadge.style.display = 'none';
-
-        if (!this.user) {
-            badge.style.display = 'none';
-            return;
-        }
-
-        badge.style.display = 'flex';
-        document.getElementById('badgeName').textContent = this.user.name;
-        
-        const tierEl = document.getElementById('badgeTier');
-        const quotaEl = document.getElementById('badgeQuota');
-        
-        if (this.user.tier === 'premium') {
-            tierEl.textContent = 'Premium';
-            tierEl.className = 'tier-premium';
-            quotaEl.textContent = '∞';
-        } else {
-            tierEl.textContent = 'Free';
-            tierEl.className = 'tier-free';
-            quotaEl.textContent = `${this.user.quota?.remaining || 0}/3`;
-        }
-
-        document.getElementById('btnLogoutBadge').onclick = () => this.logout();
-        document.getElementById('btnUpgradeBadge').onclick = () => this.showUpgradeModal();
-    },
-
-    logout() {
-        this.clearToken();
-        this.updateBadge();
-        this.showModal();
-        showToast('Logged out', 'success');
-    },
-
-    showModal() { document.getElementById('authModal').classList.remove('hidden'); },
-    hideModal() { document.getElementById('authModal').classList.add('hidden'); },
-    showUpgradeModal() { 
-        const isPremium = this.user && this.user.tier === 'premium';
-        
-        const titleEl = document.getElementById('premiumModalTitle');
-        const descEl = document.getElementById('premiumModalDesc');
-        const btnTextEl = document.getElementById('redeemBtnText');
-        const promoInput = document.getElementById('promoCodeInput');
-
-        if (titleEl && descEl) {
-            if (isPremium) {
-                titleEl.innerHTML = 'Premium Active <i class="fas fa-check-circle" style="color: #34d399; font-size: 1.5rem; margin-left: 8px;"></i>';
-                descEl.textContent = "You are currently enjoying unlimited AI analytics and precision insights. Redeem another code to extend your subscription.";
-                if (btnTextEl) btnTextEl.textContent = 'Extend';
-                if (promoInput) promoInput.placeholder = 'ENTER EXTENSION CODE';
-            } else {
-                titleEl.innerHTML = '<i class="fas fa-gem" style="color: var(--green-400);"></i> LuntiAI Premium';
-                descEl.textContent = "Elevate your farm's productivity with unlimited AI analytics and precision insights.";
-                if (btnTextEl) btnTextEl.textContent = 'Unlock';
-                if (promoInput) promoInput.placeholder = 'ENTER PROMO CODE';
-            }
-        }
-
-        document.getElementById('upgradeModal').classList.remove('hidden'); 
-    },
-    hideUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
-};
-
-const PremiumGate = {
-    handleQuota(result) {
-        if (AuthManager.user) {
-            AuthManager.user.quota = { remaining: result.quota_remaining };
-            AuthManager.updateBadge();
-        }
-
-        const isPremium = AuthManager.user && AuthManager.user.tier === 'premium';
-        
-        // Reset all locks first
-        ['#premiumFeaturesGroup', '#altCropsSection', '#probChartContainer', '#extendedResultsGroup'].forEach(selector => {
-            const el = document.querySelector(selector);
-            if (el) {
-                el.classList.remove('locked-section');
-                const lock = el.querySelector('.lock-overlay');
-                if (lock) lock.remove();
-            }
-        });
-
-        if (result.is_quota_limited && !isPremium) {
-            // Lock the ENTIRE extended results area with Quota Exceeded
-            const el = document.getElementById('extendedResultsGroup');
-            if (el && !el.classList.contains('hidden') && el.innerHTML.trim() !== '') {
-                el.classList.add('locked-section');
-                const overlay = document.createElement('div');
-                overlay.className = 'lock-overlay';
-                overlay.innerHTML = `
-                    <div class="lock-message-card">
-                        <div><i class="fas fa-lock" style="font-size: 2rem; color: #fbbf24; margin-bottom: 10px;"></i></div>
-                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Quota Exceeded</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">You've run out of free quota. Subscribe to unlock unlimited predictions and premium insights.</div>
-                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
-                    </div>
-                `;
-                el.appendChild(overlay);
-            }
-        } else if (!isPremium) {
-            // Just lock premium features group
-            const el = document.getElementById('premiumFeaturesGroup');
-            if (el && !el.classList.contains('hidden') && el.innerHTML.trim() !== '') {
-                el.classList.add('locked-section');
-                const overlay = document.createElement('div');
-                overlay.className = 'lock-overlay';
-                overlay.innerHTML = `
-                    <div class="lock-message-card">
-                        <div><i class="fas fa-gem" style="font-size: 2rem; color: var(--green-400); margin-bottom: 10px;"></i></div>
-                        <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">Premium Feature</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5;">This feature is only available on Premium Subscription. Upgrade to unlock Prediction Confidence, SHAP analysis, ROI, and detailed fertilizer logic.</div>
-                        <button class="btn btn-primary" onclick="AuthManager.showUpgradeModal()">Subscribe Now</button>
-                    </div>
-                `;
-                el.appendChild(overlay);
-            }
-        }
-    }
-};
-
-const HistoryManager = {
-    init() {
-        const btn = document.getElementById('btnHistoryBadge');
-        if (btn) btn.onclick = () => this.showModal();
-    },
-
-    async showModal() {
-        try {
-            const res = await fetch(`${API_BASE}/history`, {
-                headers: { 'Authorization': `Bearer ${AuthManager.getToken()}` }
-            });
-            const data = await res.json();
-            
-            if (res.status === 403) {
-                showToast(data.detail || 'Premium feature only', 'error');
-                return;
-            }
-
-            if (res.ok) {
-                const list = document.getElementById('historyList');
-                if (data.history.length === 0) {
-                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No predictions yet.</div>';
-                } else {
-                    list.innerHTML = data.history.map(item => `
-                        <div class="history-item">
-                            <div class="history-item-info">
-                                <div class="history-item-crop">${item.best_crop} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(${item.confidence}%)</span></div>
-                                <div class="history-item-date">${new Date(item.created_at).toLocaleString()}</div>
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);"><i class="fas fa-map-marker-alt"></i> ${item.barangay || 'Unknown'}</div>
-                        </div>
-                    `).join('');
-                }
-                document.getElementById('historyModal').classList.remove('hidden');
-            }
-        } catch (e) {
-            showToast('Failed to load history', 'error');
-        }
-    },
-
-    hideModal() { document.getElementById('historyModal').classList.add('hidden'); }
-};
-
-// Global handlers for HTML integration
-window.switchAuthTab = function(tab) {
-    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
-    if (tab === 'login') {
-        document.getElementById('tabLogin').classList.add('active');
-        document.getElementById('loginForm').classList.remove('hidden');
-    } else {
-        document.getElementById('tabRegister').classList.add('active');
-        document.getElementById('registerForm').classList.remove('hidden');
-    }
-};
-
-window.handleLogin = function(e) {
-    e.preventDefault();
-    AuthManager.login(document.getElementById('loginPhone').value, document.getElementById('loginPassword').value);
-};
-
-window.handleRegister = function(e) {
-    e.preventDefault();
-    AuthManager.register(document.getElementById('regPhone').value, document.getElementById('regName').value, document.getElementById('regPassword').value);
-};
-
-window.handleRedeem = async function(e) {
-    e.preventDefault();
-    const code = document.getElementById('promoCodeInput').value;
-    try {
-        const res = await fetch(`${API_BASE}/redeem`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AuthManager.getToken()}` },
-            body: JSON.stringify({ code })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            showToast('Premium unlocked!', 'success');
-            AuthManager.hideUpgradeModal();
-            AuthManager.fetchProfile();
-            // Retrigger predict to refresh view without locks if we have inputs
-            if (window.lastResult) document.getElementById('cropForm').dispatchEvent(new Event('submit'));
-        } else {
-            showToast(data.detail || 'Invalid code', 'error');
-        }
-    } catch (err) {
-        showToast('Network error', 'error');
-    }
-};
-
-// =============================================================================
-// DOM REFERENCES
-// =============================================================================
 
 // Crop emoji mapping
 const CROP_ICONS = {
@@ -342,15 +28,30 @@ const CROP_ICONS = {
     'Tomato':       '🍅',
 };
 
+const CROP_ICON_CLASSES = {
+    'Rice': 'fa-wheat-awn',
+    'Banana': 'fa-seedling',
+    'Cacao': 'fa-seedling',
+    'Coconut': 'fa-tree',
+    'Durian': 'fa-seedling',
+    'Corn': 'fa-wheat-awn',
+    'Mango': 'fa-leaf',
+    'Papaya': 'fa-leaf',
+    'Cassava': 'fa-carrot',
+    'Sweet Potato': 'fa-carrot',
+    'Eggplant': 'fa-seedling',
+    'Tomato': 'fa-apple-whole',
+};
+
 // =============================================================================
 // LOCALIZATION (EN / Tagalog / Cebuano)
 // =============================================================================
 const I18N = {
     en: {
-        header_subtitle:    'Precision agriculture powered by AI — Smart crop recommendations for farmers in Tagum City, Davao del Norte',
+        header_subtitle:    'Barangay-level crop recommendations for Tagum City.',
         header_badge:       'AI Model Active • 12 Philippine Crops • 23 Barangays',
         select_location:    'Select Your Location',
-        select_location_desc: 'Choose your barangay to auto-fill soil and weather data',
+        select_location_desc: 'Select a Tagum barangay to auto-fill local soil and weather data.',
         soil_params_title:  'Soil & Climate Parameters',
         soil_params_desc:   'Auto-filled from your barangay — adjust if you have lab results',
         label_rainfall:     'Rainfall',
@@ -359,9 +60,9 @@ const I18N = {
         hint_om:            '% of soil weight (0–15%)',
         btn_predict:        'Get Crop Recommendation',
         pred_confidence:    'Prediction Confidence',
-        shap_title:         '🧠 AI Explanation — Why this crop?',
-        shap_positive:      '✅ Factors that support this recommendation:',
-        shap_negative:      '⚠️ Limiting factors (consider managing these):',
+        shap_title:         'AI Explanation — Why this crop?',
+        shap_positive:      'Factors that support this recommendation:',
+        shap_negative:      'Limiting factors to manage:',
         shap_no_data:       'Explanation not available for this prediction.',
         alt_crops_label:    'Other Suitable Crops',
         fertilizer_label:   'Fertilizer Advice',
@@ -401,9 +102,10 @@ const I18N = {
         hero_title:         'AI Recommendation',
         hero_desc:          'Based on your soil and climate conditions',
         footer_built:       'Built for the Technopreneurship Academic Festival 2026',
+        scroll_explore:     'Explore below',
         live_cond:          'Live Conditions',
         soil_prof:          'Soil Profile',
-        disclaimer_html:    '<strong>How does auto-fill work?</strong> Soil values are <em>barangay-level averages</em> from BSWM regional soil classification data — not exact measurements for your specific plot. Soil can vary within the same barangay due to elevation, drainage, and land-use history. These averages give you a <strong>reliable starting point</strong> (±15-20% of actual). If you have lab test results, override the values below for higher accuracy. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Future: IoT soil sensors will provide plot-level precision.</span>',
+        disclaimer_html:    '<strong>How does auto-fill work?</strong> Soil values are barangay-level averages from BSWM regional soil classification data, not exact measurements for a specific plot. Soil can vary within one barangay due to elevation, drainage, and land-use history. If you have lab test results, override the values for higher accuracy.',
         msg_prefix:         'Based on your soil and climate conditions,',
         msg_suffix:         'is the recommended crop.',
     },
@@ -462,6 +164,7 @@ const I18N = {
         hero_title:         'Rekomendasyon ng AI',
         hero_desc:          'Batay sa kondisyon ng lupa at klima mo',
         footer_built:       'Ginawa para sa Technopreneurship Academic Festival 2026',
+        scroll_explore:     'I-explore sa ibaba',
         live_cond:          'Kasulukuyang Panahon',
         soil_prof:          'Profile ng Lupa',
         disclaimer_html:    '<strong>Paano gumagana ang auto-fill?</strong> Ang mga halaga ng lupa ay <em>average sa antas ng barangay</em> mula sa data ng BSWM — hindi eksaktong sukat para sa partikular na lote mo. Maaaring mag-iba ang lupa sa loob ng iisang barangay dahil sa elebasyon at daloy ng tubig. Ang mga average na ito ay nagbibigay ng <strong>maaasahang panimulang punto</strong> (±15-20% ng aktwal). Kung may resulta ka sa lab, palitan ang mga halaga para sa mas tumpak na resulta. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Hinaharap: Ang mga IoT sensor ay magbibigay ng eksaktong katumpakan sa lote.</span>',
@@ -542,6 +245,7 @@ const I18N = {
         hero_title:         'Rekomendasyon sa AI',
         hero_desc:          'Base sa kondisyon sa imong yuta ug klima',
         footer_built:       'Gihimo para sa Technopreneurship Academic Festival 2026',
+        scroll_explore:     'Tan-awa sa ubos',
         live_cond:          'Kasamtangang Panahon',
         soil_prof:          'Profile sa Yuta',
         disclaimer_html:    '<strong>Giunsa pag-obra ang auto-fill?</strong> Ang mga value sa yuta kay <em>average sa matag barangay</em> gikan sa datos sa BSWM — dili eksakto sa imong kaugalingong yuta. Ang yuta pwede magkalahi sa usa ka barangay tungod sa porma sa yuta ug agianan sa tubig. Kining mga average muhatag nimog <strong>kasaligan nga basehan</strong> (±15-20% sa tinuod). Kung duna kay resulta sa lab, usba ang mga value ubos para mas ensakto. <span class="disclaimer-future"><i class="fas fa-microchip"></i> Sa Unahan: Ang mga IoT sensor muhatag og mas eksaktong datos sa matag luna.</span>',
@@ -631,16 +335,28 @@ const fertilizerSection= document.getElementById('fertilizerSection');
 
 let probChartInstance = null;
 
+function setApiStatus(mode, label) {
+    const status = document.getElementById('apiStatus');
+    if (!status) return;
+    const dot = status.querySelector('.status-dot');
+    if (dot) {
+        dot.className = `status-dot ${mode}`;
+    }
+    const text = status.querySelector('span:last-child');
+    if (text) {
+        text.textContent = label;
+    }
+}
+
 // =============================================================================
 // INITIALIZATION
 // =============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     initLocalization();
-    AuthManager.init();
-    HistoryManager.init();
     await loadBarangays();
     checkBackendHealth();
+    initInteractivity();
 
     // Language toggle buttons
     document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -666,7 +382,8 @@ async function loadBarangays() {
         window._barangayData = data.barangays;
     } catch (err) {
         console.warn('Could not load barangays from API:', err.message);
-        showToast('Backend not connected. Using offline mode.', 'info');
+        setApiStatus('offline', 'Offline demo mode');
+        showToast('Backend not connected. Using offline demo mode.', 'info');
         loadBarangaysFallback();
     }
 }
@@ -695,9 +412,11 @@ async function checkBackendHealth() {
         if (res.ok) {
             const health = await res.json();
             console.log('✅ Backend connected:', health);
+            setApiStatus('online', 'API connected');
         }
     } catch (err) {
         console.warn('⚠ Backend not reachable:', err.message);
+        setApiStatus('offline', 'Offline demo mode');
     }
 }
 
@@ -743,24 +462,24 @@ function renderWeatherData(weather) {
     weatherSource.textContent = weather.source || '';
     weatherDataGrid.innerHTML = `
         <div class="data-card">
-            <span class="data-card-icon">🌡️</span>
+            <span class="data-card-icon"><i class="fas fa-temperature-half"></i></span>
             <div class="data-card-label">Temperature</div>
             <div class="data-card-value">${weather.temp}<span class="data-card-unit">°C</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">💧</span>
+            <span class="data-card-icon"><i class="fas fa-water"></i></span>
             <div class="data-card-label">Humidity</div>
             <div class="data-card-value">${weather.humidity}<span class="data-card-unit">%</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">🌧️</span>
+            <span class="data-card-icon"><i class="fas fa-cloud-rain"></i></span>
             <div class="data-card-label">Rainfall</div>
             <div class="data-card-value">${weather.rainfall_estimate}<span class="data-card-unit">mm/mo</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">☁️</span>
+            <span class="data-card-icon"><i class="fas fa-cloud-sun"></i></span>
             <div class="data-card-label">Conditions</div>
-            <div class="data-card-value" style="font-size: 1rem;">${weather.description}</div>
+            <div class="data-card-value compact">${weather.description}</div>
         </div>
     `;
 }
@@ -769,24 +488,24 @@ function renderWeatherFallback() {
     weatherSource.textContent = 'PAGASA Climate Normals';
     weatherDataGrid.innerHTML = `
         <div class="data-card">
-            <span class="data-card-icon">🌡️</span>
+            <span class="data-card-icon"><i class="fas fa-temperature-half"></i></span>
             <div class="data-card-label">Temperature</div>
             <div class="data-card-value">27.5<span class="data-card-unit">°C</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">💧</span>
+            <span class="data-card-icon"><i class="fas fa-water"></i></span>
             <div class="data-card-label">Humidity</div>
             <div class="data-card-value">82<span class="data-card-unit">%</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">🌧️</span>
+            <span class="data-card-icon"><i class="fas fa-cloud-rain"></i></span>
             <div class="data-card-label">Rainfall</div>
             <div class="data-card-value">175<span class="data-card-unit">mm/mo</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon">☁️</span>
+            <span class="data-card-icon"><i class="fas fa-cloud-sun"></i></span>
             <div class="data-card-label">Conditions</div>
-            <div class="data-card-value" style="font-size: 1rem;">Tropical Wet</div>
+            <div class="data-card-value compact">Tropical Wet</div>
         </div>
     `;
 }
@@ -795,27 +514,27 @@ function renderSoilData(soil, barangayName) {
     soilTypeLabel.textContent = `${soil.soil_type || 'Loam'} — ${barangayName}`;
     soilDataGrid.innerHTML = `
         <div class="data-card">
-            <span class="data-card-icon" style="color: #ef4444;">⚛</span>
+            <span class="data-card-icon"><i class="fas fa-flask"></i></span>
             <div class="data-card-label">Nitrogen (N)</div>
             <div class="data-card-value">${soil.N}<span class="data-card-unit">mg/kg</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon" style="color: #f97316;">◉</span>
+            <span class="data-card-icon"><i class="fas fa-vial"></i></span>
             <div class="data-card-label">Phosphorus (P)</div>
             <div class="data-card-value">${soil.P}<span class="data-card-unit">mg/kg</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon" style="color: #a855f7;">◉</span>
+            <span class="data-card-icon"><i class="fas fa-atom"></i></span>
             <div class="data-card-label">Potassium (K)</div>
             <div class="data-card-value">${soil.K}<span class="data-card-unit">mg/kg</span></div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon" style="color: #8b5cf6;">⚗</span>
+            <span class="data-card-icon"><i class="fas fa-droplet"></i></span>
             <div class="data-card-label">pH Level</div>
             <div class="data-card-value">${soil.pH || soil.ph}</div>
         </div>
         <div class="data-card">
-            <span class="data-card-icon" style="color: #a16207;">🌿</span>
+            <span class="data-card-icon"><i class="fas fa-layer-group"></i></span>
             <div class="data-card-label">Organic Matter</div>
             <div class="data-card-value">${soil.OM ?? soil.om ?? '—'}<span class="data-card-unit">%</span></div>
         </div>
@@ -851,6 +570,8 @@ cropForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    cropForm.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
+
     const formData = new FormData(cropForm);
     const payload = {
         N:           parseFloat(formData.get('N')),
@@ -868,7 +589,12 @@ cropForm.addEventListener('submit', async (e) => {
     for (const [key, val] of Object.entries(payload)) {
         if (key === 'barangay') continue;
         if (isNaN(val) || val === null) {
-            showToast('Please select a Barangay or fill in all soil parameters manually.', 'error');
+            const field = cropForm.querySelector(`[name="${key}"]`);
+            if (field) {
+                field.setAttribute('aria-invalid', 'true');
+                field.focus();
+            }
+            showToast(`Please fill in ${key}.`, 'error');
             return;
         }
     }
@@ -880,10 +606,7 @@ cropForm.addEventListener('submit', async (e) => {
     try {
         const res = await fetch(`${API_BASE}/predict`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AuthManager.getToken()}` 
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
 
@@ -901,38 +624,31 @@ cropForm.addEventListener('submit', async (e) => {
     }
 });
 
+cropForm.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
+});
+
 // =============================================================================
 // RESULTS RENDERING
 // =============================================================================
 function renderResults(result) {
     window.lastResult = result; // Save for language toggles
 
-    const icon = CROP_ICONS[result.best_crop] || '🌱';
-    const confColor = result.confidence >= 80 ? 'var(--green-600)' :
-                      result.confidence >= 60 ? 'var(--earth-600)' : '#f59e0b';
+    const iconClass = CROP_ICON_CLASSES[result.best_crop] || 'fa-seedling';
+    const confTone = result.confidence >= 80 ? 'high' :
+                     result.confidence >= 60 ? 'medium' : 'low';
     
     // Construct localized message
     const locMsg = `${t('msg_prefix')} <strong>${result.best_crop}</strong> ${t('msg_suffix')}`;
 
-    let warningHtml = '';
-    if (result.maturity_warning && result.maturity_years_to_first_harvest) {
-        warningHtml = `
-            <div class="warning-banner" style="margin-top: 16px;">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span><strong>Tree Crop Advisory:</strong> This crop takes ${result.maturity_years_to_first_harvest} years to reach its first harvest. Please plan your financial runway accordingly. ${result.intercropping ? `Consider intercropping with <strong>${result.intercropping}</strong> for short-term income.` : ''}</span>
-            </div>
-        `;
-    }
-
     resultHero.innerHTML = `
-        <div class="result-hero">
-            <div style="font-size: 3.5rem; margin-bottom: 8px;">${icon}</div>
+        <div class="result-hero confidence-${confTone}">
+            <div class="result-crop-icon" aria-hidden="true"><i class="fas ${iconClass}"></i></div>
             <div class="result-crop-name">${result.best_crop}</div>
-            <p style="color: var(--text-secondary); margin: 8px 0; font-size: 1.05rem; line-height: 1.5;">${locMsg}</p>
-            <div class="result-confidence" style="color: ${confColor}; border-color: ${confColor}40;">
+            <p class="result-message">${locMsg}</p>
+            <div class="result-confidence">
                 <i class="fas fa-bullseye"></i> ${(result.confidence).toFixed(2)}% <span data-i18n="pred_confidence">${t('pred_confidence')}</span>
             </div>
-            ${warningHtml}
         </div>
     `;
 
@@ -940,16 +656,16 @@ function renderResults(result) {
     const alts = (result.top_predictions || []).filter(p => p.crop !== result.best_crop).slice(0, 4);
     if (alts.length > 0) {
         altCropsSection.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 12px;">
-                <i class="fas fa-list-ul" style="color: var(--green-400);"></i>
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${t('alt_crops_label')}</span>
+            <div class="generated-heading">
+                <i class="fas fa-list-ul"></i>
+                <span>${t('alt_crops_label')}</span>
             </div>
             <div class="alt-crops-grid">
                 ${alts.map((a, i) => `
                     <div class="alt-crop-card">
                         <div class="alt-crop-rank">${i + 2}</div>
                         <div>
-                            <div class="alt-crop-name">${CROP_ICONS[a.crop] || '🌱'} ${a.crop}</div>
+                            <div class="alt-crop-name"><i class="fas ${CROP_ICON_CLASSES[a.crop] || 'fa-seedling'}" aria-hidden="true"></i> ${a.crop}</div>
                             <div class="alt-crop-prob">${a.probability}% match</div>
                         </div>
                     </div>
@@ -967,9 +683,9 @@ function renderResults(result) {
     const ferts = result.fertilizer_recommendations || [];
     if (ferts.length > 0) {
         fertilizerSection.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 12px;">
-                <i class="fas fa-flask" style="color: var(--earth-400);"></i>
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${t('fertilizer_label')}</span>
+            <div class="generated-heading">
+                <i class="fas fa-flask"></i>
+                <span>${t('fertilizer_label')}</span>
             </div>
             ${ferts.map(f => {
                 let brandsHtml = '';
@@ -983,7 +699,7 @@ function renderResults(result) {
                 
                 return `
                 <div class="fertilizer-card urgency-${f.urgency || 'low'}">
-                    <div class="fertilizer-title">${f.icon || ''} ${t(f.condition)}</div>
+                    <div class="fertilizer-title">${t(f.condition)}</div>
                     <div class="fertilizer-text">${t(f.recommendation)}</div>
                     
                     ${f.rate ? `<div class="fert-detail"><strong><i class="fas fa-balance-scale"></i> ${t('fert_rate')}:</strong> ${t(f.rate)}</div>` : ''}
@@ -1019,9 +735,9 @@ function renderResults(result) {
         const fmtNum = (val) => new Intl.NumberFormat('en-US').format(val);
         
         econSection.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 24px; margin-bottom: 12px;">
-                <i class="fas fa-calculator" style="color: var(--green-400);"></i>
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">${t('econ_title')}</span>
+            <div class="generated-heading">
+                <i class="fas fa-calculator"></i>
+                <span>${t('econ_title')}</span>
             </div>
             
             <div class="econ-card">
@@ -1071,10 +787,6 @@ function renderResults(result) {
 
     // Show results
     resultsSection.classList.remove('hidden');
-    
-    // Process Premium Gate
-    PremiumGate.handleQuota(result);
-    
     setTimeout(() => {
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -1121,14 +833,14 @@ function renderShapExplanation(shap) {
         : `<div class="shap-none">—</div>`;
 
     shapSection.innerHTML = `
-        <div class="shap-card" style="margin-top: 20px;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
-                <i class="fas fa-brain" style="color: var(--green-400);"></i>
-                <span style="font-weight:700; color:var(--text-primary); font-size:0.95rem;">${t('shap_title')}</span>
+        <div class="shap-card">
+            <div class="generated-heading">
+                <i class="fas fa-brain"></i>
+                <span>${t('shap_title')}</span>
             </div>
             <p class="shap-label">${t('shap_positive')}</p>
             ${posHTML}
-            <p class="shap-label" style="margin-top:12px;">${t('shap_negative')}</p>
+            <p class="shap-label">${t('shap_negative')}</p>
             ${negHTML}
         </div>
     `;
@@ -1146,9 +858,11 @@ function renderChart(predictions) {
     const data = predictions.map(p => p.probability);
     
     // Check if light mode is active for chart colors
-    const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
-    const textColor = isLightMode ? '#44403c' : '#a5d6a7';
-    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.1)';
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDarkMode ? '#b9c2b5' : '#5f6b61';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(24, 34, 26, 0.08)';
+    const primaryColor = isDarkMode ? 'rgba(119, 197, 140, 0.72)' : 'rgba(31, 107, 59, 0.76)';
+    const primaryBorder = isDarkMode ? 'rgba(119, 197, 140, 1)' : 'rgba(31, 107, 59, 1)';
 
     probChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -1157,10 +871,11 @@ function renderChart(predictions) {
             datasets: [{
                 label: 'Match Probability (%)',
                 data: data,
-                backgroundColor: 'rgba(34, 197, 94, 0.6)',
-                borderColor: 'rgba(34, 197, 94, 1)',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: primaryColor,
+                borderColor: primaryBorder,
+                borderWidth: 1.5,
+                borderRadius: 8,
+                hoverBackgroundColor: 'rgba(34, 197, 94, 0.9)',
             }]
         },
         options: {
@@ -1172,8 +887,10 @@ function renderChart(predictions) {
                     callbacks: {
                         label: ctx => `${ctx.parsed.y}%`
                     },
-                    backgroundColor: 'rgba(20, 40, 25, 0.9)',
-                    borderColor: 'rgba(34, 197, 94, 0.3)',
+                    backgroundColor: isDarkMode ? 'rgba(16, 23, 15, 0.95)' : 'rgba(255, 255, 255, 0.96)',
+                    titleColor: isDarkMode ? '#f3f0e7' : '#18221a',
+                    bodyColor: isDarkMode ? '#f3f0e7' : '#18221a',
+                    borderColor: primaryBorder,
                     borderWidth: 1,
                 }
             },
@@ -1182,11 +899,11 @@ function renderChart(predictions) {
                     beginAtZero: true,
                     max: 100,
                     grid: { color: gridColor },
-                    ticks: { color: textColor, font: { family: 'Inter' } }
+                    ticks: { color: textColor, font: { family: 'Plus Jakarta Sans' } }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: textColor, font: { family: 'Inter', size: 11 } }
+                    ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 11 } }
                 }
             }
         }
@@ -1203,9 +920,9 @@ function renderEconChart(cost, profit, gross) {
         econChartInstance.destroy();
     }
     
-    const isLightMode = document.documentElement.getAttribute('data-theme') === 'light';
-    const textColor = isLightMode ? '#44403c' : '#a5d6a7';
-    const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255, 255, 255, 0.1)';
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDarkMode ? '#b9c2b5' : '#5f6b61';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(24, 34, 26, 0.08)';
 
     econChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -1215,18 +932,18 @@ function renderEconChart(cost, profit, gross) {
                 {
                     label: t('econ_cost'),
                     data: [cost],
-                    backgroundColor: 'rgba(245, 158, 11, 0.7)',
-                    borderColor: 'rgba(245, 158, 11, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    backgroundColor: isDarkMode ? 'rgba(231, 191, 88, 0.65)' : 'rgba(180, 83, 9, 0.58)',
+                    borderColor: isDarkMode ? 'rgba(231, 191, 88, 1)' : 'rgba(180, 83, 9, 1)',
+                    borderWidth: 1.5,
+                    borderRadius: 8
                 },
                 {
                     label: t('econ_profit'),
                     data: [profit],
-                    backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                    borderColor: 'rgba(34, 197, 94, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    backgroundColor: isDarkMode ? 'rgba(119, 197, 140, 0.65)' : 'rgba(31, 107, 59, 0.62)',
+                    borderColor: isDarkMode ? 'rgba(119, 197, 140, 1)' : 'rgba(31, 107, 59, 1)',
+                    borderWidth: 1.5,
+                    borderRadius: 8
                 }
             ]
         },
@@ -1236,7 +953,7 @@ function renderEconChart(cost, profit, gross) {
             plugins: {
                 legend: { 
                     position: 'top',
-                    labels: { color: textColor, font: { family: 'Inter' } }
+                    labels: { color: textColor, font: { family: 'Plus Jakarta Sans' } }
                 },
                 tooltip: {
                     callbacks: {
@@ -1257,7 +974,7 @@ function renderEconChart(cost, profit, gross) {
                     grid: { color: gridColor },
                     ticks: { 
                         color: textColor,
-                        font: { family: 'Inter' },
+                        font: { family: 'Plus Jakarta Sans' },
                         callback: function(value) {
                             return '₱' + new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(value);
                         }
@@ -1265,7 +982,7 @@ function renderEconChart(cost, profit, gross) {
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: textColor, font: { family: 'Inter' } }
+                    ticks: { color: textColor, font: { family: 'Plus Jakarta Sans' } }
                 }
             }
         }
@@ -1278,14 +995,16 @@ function renderEconChart(cost, profit, gross) {
 // =============================================================================
 function showLoading() {
     loadingOverlay.classList.add('active');
+    loadingOverlay.setAttribute('aria-hidden', 'false');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
 }
 
 function hideLoading() {
     loadingOverlay.classList.remove('active');
+    loadingOverlay.setAttribute('aria-hidden', 'true');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="fas fa-seedling"></i> Get Crop Recommendation';
+    submitBtn.innerHTML = `<i class="fas fa-magnifying-glass-chart"></i> ${t('btn_predict')}`;
 }
 
 function resetAll() {
@@ -1303,6 +1022,8 @@ function resetAll() {
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
     toast.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => {
@@ -1323,47 +1044,63 @@ window.addEventListener('error', (event) => {
 // =============================================================================
 function initTheme() {
     const saved = localStorage.getItem('luntiai-theme');
-    if (saved === 'light') {
-        document.documentElement.setAttribute('data-theme', 'light');
-        updateThemeIcon('light');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateThemeIcon('dark');
     } else {
         document.documentElement.removeAttribute('data-theme');
-        updateThemeIcon('dark');
+        updateThemeIcon('light');
     }
 }
 
 function updateThemeIcon(theme) {
     const icon = document.getElementById('themeIcon');
     if (!icon) return;
-    if (theme === 'light') {
-        icon.className = 'fas fa-moon';
-    } else {
+    if (theme === 'dark') {
         icon.className = 'fas fa-sun';
+    } else {
+        icon.className = 'fas fa-moon';
     }
 }
 
 document.getElementById('themeToggle')?.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
-    if (current === 'light') {
+    if (current === 'dark') {
         document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('luntiai-theme', 'dark');
-        updateThemeIcon('dark');
-    } else {
-        document.documentElement.setAttribute('data-theme', 'light');
         localStorage.setItem('luntiai-theme', 'light');
         updateThemeIcon('light');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('luntiai-theme', 'dark');
+        updateThemeIcon('dark');
     }
 
     // Re-render chart if visible so colors adapt
-    if (probChartInstance) {
-        const data = probChartInstance.data;
-        probChartInstance.destroy();
-        probChartInstance = null;
-        // Rebuild from stored predictions
-        const predictions = data.labels.map((label, i) => ({
-            crop: label,
-            probability: data.datasets[0].data[i],
-        }));
-        renderChart(predictions);
+    if (window.lastResult && !resultsSection.classList.contains('hidden')) {
+        renderResults(window.lastResult);
     }
 });
+
+// =============================================================================
+// UI INTERACTIVITY (Glow, Scroll, etc.)
+// =============================================================================
+function initInteractivity() {
+    const cursorGlow = document.getElementById('cursorGlow');
+    const scrollProgress = document.getElementById('scrollProgress');
+
+    // Cursor Glow Follow
+    document.addEventListener('mousemove', (e) => {
+        if (!cursorGlow) return;
+        cursorGlow.style.left = `${e.clientX}px`;
+        cursorGlow.style.top = `${e.clientY}px`;
+    });
+
+    // Scroll Progress
+    window.addEventListener('scroll', () => {
+        if (!scrollProgress) return;
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        scrollProgress.style.width = `${scrolled}%`;
+    });
+}

@@ -3,392 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuntiAI — Precision Agriculture for Tagum City</title>
-    <meta name="description" content="AI-powered crop recommendation system for farmers in Tagum City, Davao del Norte. Get data-driven farming decisions based on your barangay's soil and live weather conditions.">
+    <title>LuntiAI Field OS — Precision Agriculture for Tagum City</title>
+    <meta name="description" content="AI-powered crop recommendation workspace for farmers in Tagum City, Davao del Norte. Select a barangay, review local soil and weather data, and get a crop recommendation with ROI context.">
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
-
-    <!-- Favicon (leaf emoji) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    <link rel="icon" href="logo.png">
 </head>
-<body>
-    <div class="container">
+<body id="body">
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
-        <!-- ============================================================ -->
-        <!-- HEADER                                                       -->
-        <!-- ============================================================ -->
-        <header class="header" id="header">
-            <!-- Header Controls -->
-            <div class="header-controls">
-                <!-- Language Toggle -->
-                <div class="lang-toggle" id="langToggle" title="Language / Wika / Sinultian">
-                    <button class="lang-btn active" data-lang="en" id="langEN">EN</button>
-                    <button class="lang-btn" data-lang="tl" id="langTL">TL</button>
-                    <button class="lang-btn" data-lang="ceb" id="langCEB">CEB</button>
+    <div class="app-shell">
+        <nav class="app-bar" id="topNav" aria-label="Main navigation">
+            <button class="brand-mark" type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" aria-label="Back to top">
+                <span class="brand-symbol" aria-hidden="true">
+                    <i class="fas fa-seedling"></i>
+                </span>
+                <span>
+                    <span class="brand-name">LuntiAI</span>
+                    <span class="brand-subtitle">Field OS for Tagum City</span>
+                </span>
+            </button>
+
+            <ol class="flow-steps" aria-label="Analysis steps">
+                <li><span>01</span> Location</li>
+                <li><span>02</span> Soil & Weather</li>
+                <li><span>03</span> Recommendation</li>
+            </ol>
+
+            <div class="app-actions">
+                <div class="system-status" id="apiStatus" aria-live="polite">
+                    <span class="status-dot pending"></span>
+                    <span>Checking API</span>
                 </div>
-                <!-- Theme Toggle -->
-                <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
-                    <i class="fas fa-sun" id="themeIcon"></i>
+
+                <div class="lang-selector" id="langToggle" aria-label="Language selector">
+                    <button class="lang-btn active" type="button" data-lang="en">EN</button>
+                    <button class="lang-btn" type="button" data-lang="tl">TL</button>
+                    <button class="lang-btn" type="button" data-lang="ceb">CEB</button>
+                </div>
+
+                <button class="icon-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
             </div>
+        </nav>
 
-            <div class="logo-container">
-                <img src="logo.png" alt="LuntiAI Logo" class="logo-icon" style="background: transparent; box-shadow: none;">
-                <span class="logo-text">LuntiAI</span>
+        <header class="pitch-header" id="header">
+            <div class="pitch-copy">
+                <p class="eyebrow">Technopreneurship Academic Festival 2026</p>
+                <h1>LuntiAI</h1>
+                <p class="pitch-lede" data-i18n="header_subtitle">Barangay-level crop recommendations for Tagum City.</p>
             </div>
-            <p class="header-subtitle" data-i18n="header_subtitle">
-                Precision agriculture powered by AI — Smart crop recommendations
-                for farmers in Tagum City, Davao del Norte
-            </p>
-            <div class="account-badge" id="accountBadge" style="display: none;">
-                <div class="account-info">
-                    <span id="badgeName" style="font-weight: 600;"></span>
-                    <span class="badge-divider">•</span>
-                    <span id="badgeTier" class="tier-free">Free</span>
+
+            <div class="proof-grid" aria-label="Product proof points">
+                <div class="proof-item">
+                    <span class="proof-value">23</span>
+                    <span class="proof-label">barangays</span>
                 </div>
-                <div class="quota-text">Quota: <span id="badgeQuota">0/3</span></div>
-                <button class="icon-btn" title="History" id="btnHistoryBadge"><i class="fas fa-history"></i></button>
-                <button class="icon-btn" title="Upgrade to Premium" id="btnUpgradeBadge"><i class="fas fa-gem"></i></button>
-                <button class="icon-btn" title="Logout" id="btnLogoutBadge"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="proof-item">
+                    <span class="proof-value">12</span>
+                    <span class="proof-label">crops</span>
+                </div>
+                <div class="proof-item">
+                    <span class="proof-value">85.62%</span>
+                    <span class="proof-label">accuracy</span>
+                </div>
+                <div class="proof-item">
+                    <span class="proof-value">ROI</span>
+                    <span class="proof-label">per hectare</span>
+                </div>
             </div>
         </header>
 
-        <!-- ============================================================ -->
-        <!-- STEP 1: BARANGAY SELECTOR                                    -->
-        <!-- ============================================================ -->
-        <section class="card selector-section" id="selectorSection">
-            <div class="card-header">
-                <div class="card-header-icon green">
-                    <i class="fas fa-map-marker-alt"></i>
+        <main>
+            <section class="workspace" aria-label="Crop recommendation workspace">
+                <div class="workspace-primary">
+                    <section class="panel selector-section" id="selectorSection" aria-labelledby="locationTitle">
+                        <div class="section-heading">
+                            <span class="section-kicker">Step 1</span>
+                            <h2 id="locationTitle" data-i18n="select_location">Select Your Location</h2>
+                            <p data-i18n="select_location_desc">Select a Tagum barangay to auto-fill local soil and weather data.</p>
+                        </div>
+
+                        <label class="select-label" for="barangaySelect">Tagum City barangay</label>
+                        <div class="barangay-select-wrapper">
+                            <select class="barangay-select" id="barangaySelect">
+                                <option value="">Select a barangay</option>
+                            </select>
+                        </div>
+                    </section>
+
+                    <section class="panel form-section" id="formSection" aria-labelledby="parametersTitle">
+                        <div class="section-heading">
+                            <span class="section-kicker">Step 2</span>
+                            <h2 id="parametersTitle" data-i18n="soil_params_title">Soil & Climate Parameters</h2>
+                            <p data-i18n="soil_params_desc">Auto-filled from your barangay. Adjust values if you have lab results.</p>
+                        </div>
+
+                        <form id="cropForm" novalidate>
+                            <fieldset>
+                                <legend>Soil nutrients</legend>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputN"><i class="fas fa-flask"></i> <span data-i18n="label_n">Nitrogen (N)</span></label>
+                                        <input type="number" class="form-input" id="inputN" name="N" min="0" max="200" step="0.1" inputmode="decimal" placeholder="mg/kg" required>
+                                        <span class="form-hint" data-i18n="hint_mgkg">0-200 mg/kg</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputP"><i class="fas fa-vial"></i> <span data-i18n="label_p">Phosphorus (P)</span></label>
+                                        <input type="number" class="form-input" id="inputP" name="P" min="0" max="200" step="0.1" inputmode="decimal" placeholder="mg/kg" required>
+                                        <span class="form-hint" data-i18n="hint_mgkg">0-200 mg/kg</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputK"><i class="fas fa-atom"></i> <span data-i18n="label_k">Potassium (K)</span></label>
+                                        <input type="number" class="form-input" id="inputK" name="K" min="0" max="250" step="0.1" inputmode="decimal" placeholder="mg/kg" required>
+                                        <span class="form-hint" data-i18n="hint_mgkg_k">0-250 mg/kg</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputPH"><i class="fas fa-droplet"></i> <span data-i18n="label_ph">pH Level</span></label>
+                                        <input type="number" class="form-input" id="inputPH" name="ph" min="3" max="10" step="0.01" inputmode="decimal" placeholder="0-14" required>
+                                        <span class="form-hint" data-i18n="hint_ph">Soil acidity</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputOM"><i class="fas fa-layer-group"></i> <span data-i18n="label_om">Organic Matter (OM)</span></label>
+                                        <input type="number" class="form-input" id="inputOM" name="OM" min="0" max="15" step="0.1" inputmode="decimal" placeholder="%" required>
+                                        <span class="form-hint" data-i18n="hint_om">% of soil weight (0-15%)</span>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Climate</legend>
+                                <div class="form-grid climate-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputTemp"><i class="fas fa-temperature-half"></i> <span data-i18n="label_temp">Temperature</span></label>
+                                        <input type="number" class="form-input" id="inputTemp" name="temperature" min="10" max="45" step="0.1" inputmode="decimal" placeholder="C" required>
+                                        <span class="form-hint" data-i18n="hint_celsius">Celsius</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputHumidity"><i class="fas fa-water"></i> <span data-i18n="label_hum">Humidity</span></label>
+                                        <input type="number" class="form-input" id="inputHumidity" name="humidity" min="0" max="100" step="0.1" inputmode="decimal" placeholder="%" required>
+                                        <span class="form-hint" data-i18n="hint_percent">Percentage</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="inputRainfall"><i class="fas fa-cloud-rain"></i> <span data-i18n="label_rainfall">Rainfall</span></label>
+                                        <input type="number" class="form-input" id="inputRainfall" name="rainfall" min="0" max="500" step="0.1" inputmode="decimal" placeholder="mm/month" required>
+                                        <span class="form-hint" data-i18n="hint_rainfall">Monthly average (mm)</span>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div class="submit-row">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-magnifying-glass-chart"></i>
+                                    <span data-i18n="btn_predict">Get Crop Recommendation</span>
+                                </button>
+                            </div>
+                        </form>
+                    </section>
                 </div>
-                <div>
-                    <div class="card-title" data-i18n="select_location">Select Your Location</div>
-                    <div class="card-desc" data-i18n="select_location_desc">Choose your barangay to auto-fill soil and weather data</div>
-                </div>
+
+                <aside class="workspace-context" aria-label="Live barangay context">
+                    <section class="panel context-panel">
+                        <div class="section-heading compact">
+                            <span class="section-kicker">Live context</span>
+                            <h2>Soil & Weather</h2>
+                            <p>Local conditions appear after choosing a barangay.</p>
+                        </div>
+
+                        <div id="autoDataSection" class="hidden data-reveal">
+                            <div class="context-block">
+                                <div class="block-title">
+                                    <i class="fas fa-cloud-sun"></i>
+                                    <span data-i18n="live_cond">Live Conditions</span>
+                                    <small id="weatherSource"></small>
+                                </div>
+                                <div class="data-grid" id="weatherDataGrid"></div>
+                            </div>
+
+                            <div class="context-block">
+                                <div class="block-title">
+                                    <i class="fas fa-mountain-sun"></i>
+                                    <span data-i18n="soil_prof">Soil Profile</span>
+                                    <small id="soilType"></small>
+                                </div>
+                                <div class="data-grid soil-grid" id="soilDataGrid"></div>
+                            </div>
+                        </div>
+
+                        <details class="data-note">
+                            <summary>Data note: barangay averages</summary>
+                            <div data-i18n-html="disclaimer_html">
+                                <strong>How does auto-fill work?</strong> Soil values are barangay-level averages from BSWM regional soil classification data, not exact measurements for a specific plot. If you have lab test results, override the values for higher accuracy.
+                            </div>
+                        </details>
+                    </section>
+
+                    <section class="panel proof-panel" aria-label="Why this demo matters">
+                        <div class="mini-proof">
+                            <i class="fas fa-map-location-dot"></i>
+                            <div>
+                                <strong>Barangay mapped</strong>
+                                <span>All 23 Tagum barangays have starting soil profiles.</span>
+                            </div>
+                        </div>
+                        <div class="mini-proof">
+                            <i class="fas fa-cloud"></i>
+                            <div>
+                                <strong>Weather aware</strong>
+                                <span>Live API data falls back to PAGASA climate normals.</span>
+                            </div>
+                        </div>
+                        <div class="mini-proof">
+                            <i class="fas fa-peso-sign"></i>
+                            <div>
+                                <strong>Decision-ready</strong>
+                                <span>Crop output includes ROI and fertilizer guidance.</span>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </section>
+
+            <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-hidden="true">
+                <div class="spinner"></div>
+                <div class="loading-text" data-i18n="loading_text">Analyzing soil conditions with AI model...</div>
             </div>
 
-            <!-- Soil Data Methodology Disclaimer -->
-            <div class="disclaimer-banner" id="disclaimerBanner">
-                <div class="disclaimer-icon"><i class="fas fa-info-circle"></i></div>
-                <div class="disclaimer-content" data-i18n-html="disclaimer_html">
-                    <strong>How does auto-fill work?</strong>
-                    Soil values are <em>barangay-level averages</em> from BSWM regional soil classification data — not exact measurements for your specific plot.
-                    Soil can vary within the same barangay due to elevation, drainage, and land-use history.
-                    These averages give you a <strong>reliable starting point</strong> (±15-20% of actual).
-                    If you have lab test results, override the values below for higher accuracy.
-                    <span class="disclaimer-future"><i class="fas fa-microchip"></i> Future: IoT soil sensors will provide plot-level precision.</span>
-                </div>
-            </div>
-
-            <div class="barangay-select-wrapper">
-                <select class="barangay-select" id="barangaySelect">
-                    <option value="">— Select a Barangay in Tagum City —</option>
-                </select>
-            </div>
-
-            <!-- Weather & Soil Data Cards (appear after selection) -->
-            <div id="autoDataSection" class="hidden">
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 8px;">
-                    <i class="fas fa-cloud-sun" style="color: var(--green-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="live_cond">Live Conditions</span>
-                    <span id="weatherSource" style="font-size: 0.7rem; color: var(--text-muted); margin-left: auto;"></span>
-                </div>
-                <div class="data-grid" id="weatherDataGrid">
-                    <!-- Dynamically populated -->
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 16px; margin-bottom: 8px;">
-                    <i class="fas fa-mountain" style="color: var(--earth-400);"></i>
-                    <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="soil_prof">Soil Profile</span>
-                    <span id="soilType" style="font-size: 0.7rem; color: var(--text-muted); margin-left: auto;"></span>
-                </div>
-                <div class="data-grid" id="soilDataGrid">
-                    <!-- Dynamically populated -->
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================ -->
-        <!-- STEP 2: MANUAL INPUT / ADJUSTMENT                            -->
-        <!-- ============================================================ -->
-        <section class="card form-section" id="formSection">
-            <div class="card-header">
-                <div class="card-header-icon amber">
-                    <i class="fas fa-sliders-h"></i>
-                </div>
-                <div>
-                    <div class="card-title" data-i18n="soil_params_title">Soil & Climate Parameters</div>
-                    <div class="card-desc" data-i18n="soil_params_desc">Auto-filled from your barangay — adjust if you have lab results</div>
-                </div>
-            </div>
-
-            <form id="cropForm" novalidate>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="inputN">
-                            <span class="icon" style="color: #ef4444;">⚛</span> <span data-i18n="label_n">Nitrogen (N)</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputN" name="N"
-                               min="0" max="200" step="0.1" placeholder="mg/kg" required>
-                        <span class="form-hint" data-i18n="hint_mgkg">0–200 mg/kg</span>
+            <section class="decision-report hidden" id="resultsSection" aria-labelledby="resultsTitle">
+                <div class="report-header">
+                    <div>
+                        <span class="section-kicker">Step 3</span>
+                        <h2 id="resultsTitle" data-i18n="hero_title">AI Recommendation</h2>
+                        <p data-i18n="hero_desc">Based on your soil and climate conditions</p>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputP">
-                            <span class="icon" style="color: #f97316;">◉</span> <span data-i18n="label_p">Phosphorus (P)</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputP" name="P"
-                               min="0" max="200" step="0.1" placeholder="mg/kg" required>
-                        <span class="form-hint" data-i18n="hint_mgkg">0–200 mg/kg</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputK">
-                            <span class="icon" style="color: #a855f7;">◉</span> <span data-i18n="label_k">Potassium (K)</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputK" name="K"
-                               min="0" max="250" step="0.1" placeholder="mg/kg" required>
-                        <span class="form-hint" data-i18n="hint_mgkg_k">0–250 mg/kg</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputTemp">
-                            <span class="icon" style="color: #ef4444;">🌡</span> <span data-i18n="label_temp">Temperature</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputTemp" name="temperature"
-                               min="10" max="45" step="0.1" placeholder="°C" required>
-                        <span class="form-hint" data-i18n="hint_celsius">Celsius</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputHumidity">
-                            <span class="icon" style="color: #3b82f6;">💧</span> <span data-i18n="label_hum">Humidity</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputHumidity" name="humidity"
-                               min="0" max="100" step="0.1" placeholder="%" required>
-                        <span class="form-hint" data-i18n="hint_percent">Percentage</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputPH">
-                            <span class="icon" style="color: #8b5cf6;">⚗</span> <span data-i18n="label_ph">pH Level</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputPH" name="ph"
-                               min="3" max="10" step="0.01" placeholder="0–14" required>
-                        <span class="form-hint" data-i18n="hint_ph">Soil acidity</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputRainfall">
-                            <span class="icon" style="color: #06b6d4;">🌧</span> <span data-i18n="label_rainfall">Rainfall</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputRainfall" name="rainfall"
-                               min="0" max="500" step="0.1" placeholder="mm/month" required>
-                        <span class="form-hint" data-i18n="hint_rainfall">Monthly average (mm)</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="inputOM">
-                            <span class="icon" style="color: #a16207;">🌿</span> <span data-i18n="label_om">Organic Matter (OM)</span>
-                        </label>
-                        <input type="number" class="form-input" id="inputOM" name="OM"
-                               min="0" max="15" step="0.1" placeholder="%" required>
-                        <span class="form-hint" data-i18n="hint_om">% of soil weight (0–15%)</span>
-                    </div>
-                </div>
-
-                <div class="btn-center">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="fas fa-seedling"></i>
-                        <span data-i18n="btn_predict">Get Crop Recommendation</span>
+                    <button class="btn btn-secondary" type="button" onclick="resetAll()">
+                        <i class="fas fa-rotate-right"></i>
+                        <span data-i18n="new_analysis">New Analysis</span>
                     </button>
                 </div>
-            </form>
-        </section>
 
-        <!-- ============================================================ -->
-        <!-- LOADING STATE                                                -->
-        <!-- ============================================================ -->
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="spinner"></div>
-            <div class="loading-text" data-i18n="loading_text">Analyzing soil conditions with AI model...</div>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- RESULTS                                                      -->
-        <!-- ============================================================ -->
-        <section class="card results-section hidden" id="resultsSection">
-            <div class="card-header">
-                <div class="card-header-icon green">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <div class="card-title" data-i18n="hero_title">AI Recommendation</div>
-                    <div class="card-desc" data-i18n="hero_desc">Based on your soil and climate conditions</div>
-                </div>
-            </div>
-
-            <!-- Extended Results Area -->
-            <div id="extendedResultsGroup" style="display: block; border-radius: 16px;">
-                <!-- Hero result -->
-                <div id="resultHero"></div>
-
-                <!-- Alternative crops -->
-                <div id="altCropsSection"></div>
-
-                <!-- Premium Features Group -->
-                <div id="premiumFeaturesGroup">
-                    <!-- Confidence chart -->
-                    <div class="chart-container" id="probChartContainer">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <i class="fas fa-chart-bar" style="color: var(--green-400);"></i>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="pred_confidence">Prediction Confidence</span>
+                <div class="report-grid">
+                    <div class="report-main">
+                        <div id="resultHero"></div>
+                        <div id="economicsSection"></div>
+                        <div class="chart-container hidden" id="econChartContainer">
+                            <div class="chart-title">
+                                <i class="fas fa-chart-pie"></i>
+                                <span data-i18n="econ_chart_title">Business Projection (per Hectare)</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="econChart" aria-label="Business projection chart"></canvas>
+                            </div>
                         </div>
-                        <div class="chart-wrapper">
-                            <canvas id="probChart"></canvas>
+                        <div class="chart-container">
+                            <div class="chart-title">
+                                <i class="fas fa-chart-bar"></i>
+                                <span data-i18n="pred_confidence">Prediction Confidence</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="probChart" aria-label="Prediction confidence chart"></canvas>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- SHAP AI Explanation -->
-                    <div id="shapSection"></div>
-
-                    <!-- Fertilizer recommendations -->
-                    <div id="fertilizerSection"></div>
-
-                    <!-- Business & ROI Calculator -->
-                    <div id="economicsSection"></div>
-
-                    <!-- Advanced Business Chart -->
-                    <div class="chart-container hidden" id="econChartContainer">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <i class="fas fa-chart-pie" style="color: var(--earth-400);"></i>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;" data-i18n="econ_chart_title">Business Projection (per Hectare)</span>
-                        </div>
-                        <div class="chart-wrapper">
-                            <canvas id="econChart"></canvas>
-                        </div>
-                    </div>
+                    <aside class="report-side">
+                        <div id="shapSection"></div>
+                        <div id="fertilizerSection"></div>
+                        <div id="altCropsSection"></div>
+                    </aside>
                 </div>
-            </div>
+            </section>
+        </main>
 
-            <!-- Try again -->
-            <div class="btn-center">
-                <button class="btn btn-secondary" onclick="resetAll()">
-                    <i class="fas fa-redo"></i>
-                    <span data-i18n="new_analysis">New Analysis</span>
-                </button>
-            </div>
-        </section>
-
-        <!-- ============================================================ -->
-        <!-- FOOTER                                                       -->
-        <!-- ============================================================ -->
         <footer class="footer">
-            <p>🌱 <strong>LuntiAI</strong> — Precision Agriculture for Tagum City</p>
+            <p><strong>LuntiAI</strong> — Precision Agriculture for Tagum City</p>
             <div class="footer-tech">
                 <span><i class="fas fa-brain"></i> Random Forest ML</span>
-                <span><i class="fas fa-database"></i> 120K+ Data Points</span>
-                <span><i class="fas fa-cloud"></i> Live Weather</span>
-                <span><i class="fas fa-map"></i> 23 Barangays</span>
+                <span><i class="fas fa-database"></i> 120K+ data points</span>
+                <span><i class="fas fa-cloud"></i> Live weather</span>
+                <span><i class="fas fa-map"></i> 23 barangays</span>
             </div>
-            <p style="margin-top: 8px;" data-i18n="footer_built">Built for the Technopreneurship Academic Festival 2026</p>
+            <p data-i18n="footer_built">Built for the Technopreneurship Academic Festival 2026</p>
         </footer>
-
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- MODALS                                                       -->
-    <!-- ============================================================ -->
-    
-    <!-- Auth Modal -->
-    <div class="modal-overlay hidden" id="authModal">
-        <div class="modal-card">
-            <div class="logo-container" style="justify-content: center; margin-bottom: 5px;">
-                <img src="logo.png" alt="LuntiAI Logo" class="logo-icon" style="width: 48px; height: 48px; background: transparent; box-shadow: none;">
-                <span class="logo-text" style="font-size: 2rem;">LuntiAI</span>
-            </div>
-            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">Sign in to access your farm's premium insights.</p>
-            
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
-                <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label" for="loginPhone">Mobile Number</label>
-                    <input type="tel" class="form-input" id="loginPhone" placeholder="09XX XXX XXXX" required>
-                </div>
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" for="loginPassword">Password</label>
-                    <input type="password" class="form-input" id="loginPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 25px;">
-                    <i class="fas fa-sign-in-alt"></i> Access Account
-                </button>
-            </form>
-
-            <!-- Register Form -->
-            <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
-                <div class="form-group">
-                    <label class="form-label" for="regName">Full Name</label>
-                    <input type="text" class="form-input" id="regName" placeholder="Juan Dela Cruz" required>
-                </div>
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" for="regPhone">Mobile Number</label>
-                    <input type="tel" class="form-input" id="regPhone" placeholder="09XX XXX XXXX" required>
-                </div>
-                <div class="form-group" style="margin-top: 10px;">
-                    <label class="form-label" for="regPassword">Password</label>
-                    <input type="password" class="form-input" id="regPassword" minlength="8" placeholder="Minimum 8 characters" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 25px;">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Upgrade Modal -->
-    <div class="modal-overlay hidden" id="upgradeModal">
-        <div class="modal-card">
-            <h3 id="premiumModalTitle" style="margin-bottom: 8px; text-align: center; font-size: 1.5rem;"><i class="fas fa-gem" style="color: var(--green-400);"></i> LuntiAI Premium</h3>
-            <p id="premiumModalDesc" style="font-size: 0.9rem; color: var(--text-secondary); text-align: center; margin-bottom: 20px;">Elevate your farm's productivity with unlimited AI analytics and precision insights.</p>
-            <form onsubmit="handleRedeem(event)">
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <input type="text" class="form-input" id="promoCodeInput" placeholder="ENTER PROMO CODE" required style="text-align: center; font-size: 1rem; letter-spacing: 2px; text-transform: uppercase;">
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="AuthManager.hideUpgradeModal()">Close</button>
-                    <button type="submit" class="btn btn-primary" id="redeemBtn" style="flex: 1;"><i class="fas fa-unlock" style="margin-right: 5px;"></i> <span id="redeemBtnText">Unlock</span></button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- History Modal -->
-    <div class="modal-overlay hidden" id="historyModal">
-        <div class="modal-card" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;"><i class="fas fa-history" style="color: var(--green-400);"></i> Prediction History</h3>
-                <button class="icon-btn" onclick="HistoryManager.hideModal()" style="font-size: 1.2rem;"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="historyList" style="overflow-y: auto; flex: 1; padding-right: 10px;">
-                <!-- History items injected here -->
-            </div>
-        </div>
     </div>
 
     <script src="app.js"></script>

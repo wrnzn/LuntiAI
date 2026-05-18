@@ -344,6 +344,10 @@ const registerForm     = document.getElementById('registerForm');
 const redeemForm       = document.getElementById('redeemForm');
 const accountSummary   = document.getElementById('accountSummary');
 const historyList      = document.getElementById('historyList');
+const resultsLockNotice = document.getElementById('resultsLockNotice');
+const economicsSection = document.getElementById('economicsSection');
+const econChartContainer = document.getElementById('econChartContainer');
+const probabilityChartSection = document.getElementById('probabilityChartSection');
 
 let probChartInstance = null;
 let currentSession = {
@@ -424,6 +428,63 @@ function quotaLabel(quota = currentSession.quota, user = currentSession.user) {
     return `${remaining} free ${remaining === 1 ? 'analysis' : 'analyses'} left`;
 }
 
+function isPremiumUser(user = currentSession.user, quota = currentSession.quota) {
+    return Boolean(user && (user.tier === 'premium' || quota?.remaining === -1));
+}
+
+function isQuotaExhausted(user = currentSession.user, quota = currentSession.quota) {
+    if (!user || isPremiumUser(user, quota)) return false;
+    return Math.max(Number(quota?.remaining ?? 0), 0) <= 0;
+}
+
+function getResultAccessMode() {
+    if (!currentSession.user) return 'signed-out';
+    if (isPremiumUser()) return 'premium';
+    if (isQuotaExhausted()) return 'locked';
+    return 'free';
+}
+
+function getPremiumSections() {
+    return Array.from(document.querySelectorAll('[data-premium-section]'));
+}
+
+function updateSubmitState() {
+    if (!submitBtn) return;
+    const accessMode = getResultAccessMode();
+    submitBtn.classList.toggle('quota-locked', accessMode === 'locked');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = accessMode === 'locked'
+        ? '<i class="fas fa-lock"></i> Unlock premium to analyze'
+        : `<i class="fas fa-magnifying-glass-chart"></i> ${t('btn_predict')}`;
+}
+
+function applyResultAccessState(accessMode = getResultAccessMode()) {
+    if (!resultsSection) return;
+
+    resultsSection.classList.remove('access-free', 'access-locked', 'access-premium');
+    if (accessMode === 'free') resultsSection.classList.add('access-free');
+    if (accessMode === 'locked') resultsSection.classList.add('access-locked');
+    if (accessMode === 'premium') resultsSection.classList.add('access-premium');
+
+    getPremiumSections().forEach(section => {
+        const hasContent = section.innerHTML.trim() !== '' && !section.classList.contains('hidden');
+        section.classList.toggle('premium-locked', accessMode === 'free' && hasContent);
+    });
+
+    if (!resultsLockNotice) return;
+    if (accessMode === 'locked') {
+        resultsLockNotice.classList.remove('hidden');
+        resultsLockNotice.innerHTML = `
+            <strong>Daily free quota used</strong>
+            <span>You have reached today's free analyses. Upgrade to premium or wait until ${escapeHTML(formatResetTime(currentSession.quota?.resets_at))} to predict again.</span>
+            <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
+        `;
+    } else {
+        resultsLockNotice.classList.add('hidden');
+        resultsLockNotice.innerHTML = '';
+    }
+}
+
 function renderAuthState() {
     const user = currentSession.user;
     const quota = currentSession.quota;
@@ -482,6 +543,10 @@ function renderAuthState() {
     }
 
     renderAccountSummary();
+    updateSubmitState();
+    if (window.lastResult && !resultsSection.classList.contains('hidden')) {
+        applyResultAccessState();
+    }
 }
 
 function renderAccountSummary() {
@@ -1004,6 +1069,14 @@ cropForm.addEventListener('submit', async (e) => {
         return;
     }
 
+    if (isQuotaExhausted()) {
+        applyResultAccessState('locked');
+        if (window.lastResult) resultsSection.classList.remove('hidden');
+        openAccountModal();
+        showToast('Your free quota is used for today. Unlock premium to continue.', 'info');
+        return;
+    }
+
     cropForm.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
 
     const formData = new FormData(cropForm);
@@ -1048,13 +1121,13 @@ cropForm.addEventListener('submit', async (e) => {
         hideLoading();
 
         if (res.ok) {
-            renderResults(result);
             currentSession.quota = {
                 allowed: !result.is_quota_limited,
                 remaining: result.quota_remaining,
                 resets_at: result.quota_resets_at,
             };
             if (currentSession.quota) localStorage.setItem(AUTH_QUOTA_KEY, JSON.stringify(currentSession.quota));
+            renderResults(result);
             renderAuthState();
         } else {
             if (res.status === 401) {
@@ -1077,6 +1150,7 @@ cropForm.querySelectorAll('input').forEach(input => {
 // =============================================================================
 function renderResults(result) {
     window.lastResult = result; // Save for language toggles
+    const accessMode = getResultAccessMode();
 
     const iconClass = CROP_ICON_CLASSES[result.best_crop] || 'fa-seedling';
     const confTone = result.confidence >= 80 ? 'high' :
@@ -1084,10 +1158,16 @@ function renderResults(result) {
     
     // Construct localized message
     const locMsg = `${t('msg_prefix')} <strong>${result.best_crop}</strong> ${t('msg_suffix')}`;
-    const paywallHTML = result.is_quota_limited ? `
+    const paywallHTML = accessMode === 'locked' ? `
         <div class="paywall-card result-paywall">
             <strong>Free quota reached</strong>
-            <span>Basic recommendation is visible. Redeem premium to unlock unlimited analyses and saved history.</span>
+            <span>This report is now locked for the day. Unlock premium to keep analyzing and reveal the full decision report.</span>
+            <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
+        </div>
+    ` : accessMode === 'free' ? `
+        <div class="paywall-card result-paywall">
+            <strong>Free plan view</strong>
+            <span>Your top crop recommendation is visible. ROI, fertilizer advice, confidence charts, and alternatives are premium-only.</span>
             <button class="btn btn-primary btn-sm" type="button" data-account-open>Unlock premium</button>
         </div>
     ` : '';
@@ -1171,9 +1251,6 @@ function renderResults(result) {
     }
 
     // Business & ROI Economics
-    const econSection = document.getElementById('economicsSection');
-    const econChartContainer = document.getElementById('econChartContainer');
-    
     if (result.crop_economics) {
         const econ = result.crop_economics;
         
@@ -1239,6 +1316,7 @@ function renderResults(result) {
 
     // Show results
     resultsSection.classList.remove('hidden');
+    applyResultAccessState(accessMode);
     setTimeout(() => {
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -1456,7 +1534,7 @@ function hideLoading() {
     loadingOverlay.classList.remove('active');
     loadingOverlay.setAttribute('aria-hidden', 'true');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = `<i class="fas fa-magnifying-glass-chart"></i> ${t('btn_predict')}`;
+    updateSubmitState();
 }
 
 function resetAll() {

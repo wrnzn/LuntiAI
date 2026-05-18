@@ -343,11 +343,13 @@
                     </button>
                 </div>
 
+                <div class="results-lock-notice hidden" id="resultsLockNotice"></div>
+
                 <div class="report-grid">
                     <div class="report-main">
                         <div id="resultHero"></div>
-                        <div id="economicsSection"></div>
-                        <div class="chart-container hidden" id="econChartContainer">
+                        <div id="economicsSection" data-premium-section></div>
+                        <div class="chart-container hidden" id="econChartContainer" data-premium-section>
                             <div class="chart-title">
                                 <i class="fas fa-chart-pie"></i>
                                 <span data-i18n="econ_chart_title">Business Projection (per Hectare)</span>
@@ -356,7 +358,7 @@
                                 <canvas id="econChart" aria-label="Business projection chart"></canvas>
                             </div>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" id="probabilityChartSection" data-premium-section>
                             <div class="chart-title">
                                 <i class="fas fa-chart-bar"></i>
                                 <span data-i18n="pred_confidence">Prediction Confidence</span>
@@ -368,9 +370,9 @@
                     </div>
 
                     <aside class="report-side">
-                        <div id="shapSection"></div>
-                        <div id="fertilizerSection"></div>
-                        <div id="altCropsSection"></div>
+                        <div id="shapSection" data-premium-section></div>
+                        <div id="fertilizerSection" data-premium-section></div>
+                        <div id="altCropsSection" data-premium-section></div>
                     </aside>
                 </div>
             </section>

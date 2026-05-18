@@ -1263,7 +1263,7 @@ function renderResults(result) {
         const fmtPHP = (val) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(val);
         const fmtNum = (val) => new Intl.NumberFormat('en-US').format(val);
         
-        econSection.innerHTML = `
+        economicsSection.innerHTML = `
             <div class="generated-heading">
                 <i class="fas fa-calculator"></i>
                 <span>${t('econ_title')}</span>
@@ -1307,7 +1307,7 @@ function renderResults(result) {
         renderEconChart(econ.production_cost_php, netProfit, grossIncome);
         
     } else {
-        if (econSection) econSection.innerHTML = '';
+        if (economicsSection) economicsSection.innerHTML = '';
         if (econChartContainer) econChartContainer.classList.add('hidden');
     }
 

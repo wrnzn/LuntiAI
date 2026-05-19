@@ -183,19 +183,28 @@ summary {
 .brand-symbol,
 .card-header-icon {
     display: inline-flex;
-    width: 40px;
-    height: 40px;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     align-items: center;
     justify-content: center;
     border-radius: 9px;
-    color: #fff;
-    background: var(--forest);
+    overflow: hidden;
+    background: #fff;
 }
 
 [data-theme="dark"] .brand-symbol,
 [data-theme="dark"] .card-header-icon {
-    color: #102011;
-    background: var(--primary);
+    background: #fff;
+}
+
+.brand-logo-mark {
+    background-image: url("logo.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
 }
 
 .brand-name {

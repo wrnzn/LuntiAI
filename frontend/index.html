@@ -263,8 +263,8 @@
                     </div>
 
                     <form class="auth-form" id="loginForm" data-auth-panel="login">
-                        <label class="form-label" for="loginPhone">PH mobile number</label>
-                        <input class="form-input" id="loginPhone" name="phone" autocomplete="tel" inputmode="tel" placeholder="09171234567" required>
+                        <label class="form-label" for="loginUsername">Demo username</label>
+                        <input class="form-input" id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9_-]{2,31}" placeholder="kiko-demo" required>
                         <label class="form-label" for="loginPassword">Password</label>
                         <input class="form-input" id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="8" required>
                         <button class="btn btn-primary" type="submit">
@@ -274,12 +274,13 @@
                     </form>
 
                     <form class="auth-form hidden" id="registerForm" data-auth-panel="register">
-                        <label class="form-label" for="registerName">Full name</label>
-                        <input class="form-input" id="registerName" name="name" autocomplete="name" placeholder="Kiko Dela Cruz" required>
-                        <label class="form-label" for="registerPhone">PH mobile number</label>
-                        <input class="form-input" id="registerPhone" name="phone" autocomplete="tel" inputmode="tel" placeholder="09171234567" required>
+                        <label class="form-label" for="registerDisplayName">Display alias</label>
+                        <input class="form-input" id="registerDisplayName" name="display_name" autocomplete="off" maxlength="50" placeholder="Kiko" required>
+                        <label class="form-label" for="registerUsername">Demo username</label>
+                        <input class="form-input" id="registerUsername" name="username" autocomplete="username" minlength="3" maxlength="32" pattern="(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9_-]{2,31}" placeholder="kiko-demo" required>
                         <label class="form-label" for="registerPassword">Password</label>
                         <input class="form-input" id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="8" required>
+                        <p class="form-hint">Portfolio demo only. Use an alias and a unique throwaway password—never real personal information or a reused password.</p>
                         <button class="btn btn-primary" type="submit">
                             <i class="fas fa-user-plus"></i>
                             Create account

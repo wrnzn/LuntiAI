@@ -493,9 +493,9 @@ function renderAuthState() {
         if (user) {
             accountControls.innerHTML = `
                 <button class="account-pill" type="button" id="accountOpenBtn">
-                    <span class="account-avatar" aria-hidden="true">${escapeHTML(user.name?.[0] || 'U')}</span>
+                    <span class="account-avatar" aria-hidden="true">${escapeHTML(user.display_name?.[0] || 'U')}</span>
                     <span>
-                        <strong>${escapeHTML(user.name || 'LuntiAI user')}</strong>
+                        <strong>${escapeHTML(user.display_name || 'LuntiAI user')}</strong>
                         <small>${escapeHTML(quotaLabel(quota, user))}</small>
                     </span>
                     <span class="tier-badge ${user.tier === 'premium' ? 'premium' : 'free'}">${escapeHTML(user.tier)}</span>
@@ -564,12 +564,12 @@ function renderAccountSummary() {
     accountSummary.innerHTML = `
         <div class="summary-grid">
             <div class="summary-item">
-                <span>Name</span>
-                <strong>${escapeHTML(user.name || 'LuntiAI user')}</strong>
+                <span>Display alias</span>
+                <strong>${escapeHTML(user.display_name || 'LuntiAI user')}</strong>
             </div>
             <div class="summary-item">
-                <span>Phone</span>
-                <strong>${escapeHTML(user.phone || '—')}</strong>
+                <span>Username</span>
+                <strong>${escapeHTML(user.username || '—')}</strong>
             </div>
             <div class="summary-item">
                 <span>Plan</span>
@@ -690,8 +690,8 @@ function openAuthModal(mode = 'login', message = '') {
     authModal?.classList.remove('hidden');
     setTimeout(() => {
         const field = mode === 'register'
-            ? document.getElementById('registerName')
-            : document.getElementById('loginPhone');
+            ? document.getElementById('registerDisplayName')
+            : document.getElementById('loginUsername');
         field?.focus();
     }, 30);
 }
@@ -709,7 +709,7 @@ function setAuthPanel(mode = 'login') {
     if (title) title.textContent = normalized === 'register' ? 'Create your LuntiAI account' : 'Log in to LuntiAI';
     if (desc) {
         desc.textContent = normalized === 'register'
-            ? 'Register to use 3 free analyses per day and unlock premium later.'
+            ? 'Portfolio demo: use an alias and a unique throwaway password. Do not enter real personal information.'
             : 'Sign in to run crop analyses and keep your history.';
     }
 }

@@ -1,5 +1,14 @@
 # *.pkl (Removing to push to Hugging Face)
 __pycache__/
 .env
+.env.*
+!.env.example
+.tmp/
+.pytest_cache/
+instance/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
 .agents/skills/
 CONTEXT.md

@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+.tmp
+.pytest_cache
+instance
+__pycache__
+*.py[cod]
+*.db
+*.db-*
+*.sqlite
+*.sqlite3

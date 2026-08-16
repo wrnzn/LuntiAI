@@ -21,6 +21,13 @@ pinned: false
 - **Web App UI:** [https://owaruurawo-luntiai-crop-model.hf.space/app](https://owaruurawo-luntiai-crop-model.hf.space/app)
 - **API Base URL:** [https://owaruurawo-luntiai-crop-model.hf.space](https://owaruurawo-luntiai-crop-model.hf.space)
 
+### Public demo privacy
+
+The public demo uses aliases and non-sensitive usernames instead of phone numbers.
+Use a unique throwaway password—never submit real personal information or a password
+used on another service. Demo account data is stored in ephemeral container storage
+and may disappear whenever the Space restarts.
+
 ---
 
 ## What is LuntiAI?
@@ -67,6 +74,7 @@ python train_model.py
 
 ### 4. Run the Server
 ```bash
+cp .env.example .env
 cd api
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -103,7 +111,7 @@ crop-random-forest-model/
 │   └── README.md             # Complete pitch materials
 ├── train_model.py            # Model training pipeline
 ├── requirements.txt          # Python dependencies
-├── .env                      # Environment variables
+├── .env.example              # Safe environment-variable template
 └── README.md                 # This file
 ```
 
@@ -118,6 +126,10 @@ crop-random-forest-model/
 | GET | `/weather/{name}` | Live weather for a barangay |
 | GET | `/health` | System health check |
 | GET | `/docs` | Interactive Swagger documentation |
+
+Account endpoints accept a non-sensitive `username`, display alias, and password.
+The SQLite runtime database is generated locally and excluded from Git and Docker
+build contexts.
 
 ---
 

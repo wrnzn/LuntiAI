@@ -1,7 +1,5 @@
 import os
 import sys
-import uuid
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -39,15 +37,13 @@ class FakeLabelEncoder:
 
 
 @pytest.fixture()
-def client(monkeypatch):
+def client(monkeypatch, tmp_path):
     import database
     import main
 
-    db_dir = Path.cwd() / ".tmp"
-    db_dir.mkdir(exist_ok=True)
-    db_path = db_dir / f"test-users-{uuid.uuid4().hex}.db"
+    db_path = tmp_path / "test-users.db"
 
-    monkeypatch.setenv("JWT_SECRET_KEY", "test-secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "test-secret-that-is-at-least-32-chars")
     monkeypatch.setattr(database, "DB_PATH", str(db_path))
     monkeypatch.setattr(main, "model", FakeModel())
     monkeypatch.setattr(main, "label_encoder", FakeLabelEncoder())
@@ -58,10 +54,6 @@ def client(monkeypatch):
     with TestClient(main.app) as test_client:
         yield test_client
 
-    try:
-        db_path.unlink()
-    except FileNotFoundError:
-        pass
 
 
 def test_free_user_quota_soft_lock_redeem_and_history(client):
@@ -70,7 +62,7 @@ def test_free_user_quota_soft_lock_redeem_and_history(client):
 
     registered = client.post(
         "/register",
-        json={"phone": "09171234567", "name": "Kiko", "password": "secret123"},
+        json={"username": "kiko-demo", "display_name": "Kiko", "password": "secret123"},
     )
     assert registered.status_code == 200
     token = registered.json()["access_token"]
@@ -127,17 +119,33 @@ def test_free_user_quota_soft_lock_redeem_and_history(client):
 def test_user_can_update_profile_and_delete_account(client):
     registered = client.post(
         "/register",
-        json={"phone": "+639181234567", "name": "Ana", "password": "secret123"},
+        json={"username": "ana-demo", "display_name": "Ana", "password": "secret123"},
     )
     assert registered.status_code == 200
     headers = {"Authorization": f"Bearer {registered.json()['access_token']}"}
 
-    updated = client.put("/me", json={"name": "Ana Cruz"}, headers=headers)
+    updated = client.put("/me", json={"display_name": "Ana Cruz"}, headers=headers)
     assert updated.status_code == 200
-    assert updated.json()["user"]["name"] == "Ana Cruz"
+    assert updated.json()["user"]["display_name"] == "Ana Cruz"
 
     deleted = client.delete("/me", headers=headers)
     assert deleted.status_code == 200
 
     me = client.get("/me", headers=headers)
     assert me.status_code == 401
+
+
+def test_registration_rejects_phone_number_as_username(client):
+    response = client.post(
+        "/register",
+        json={"username": "09171234567", "display_name": "Demo", "password": "secret123"},
+    )
+
+    assert response.status_code == 400
+    assert "Username must" in response.json()["detail"]
+
+
+def test_malformed_token_is_rejected(client):
+    response = client.get("/me", headers={"Authorization": "Bearer not.a.valid-token"})
+
+    assert response.status_code == 401

@@ -3,6 +3,7 @@ JWT and password helpers for LuntiAI account auth.
 """
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -16,7 +17,9 @@ from fastapi import HTTPException, Request, status
 try:
     from jose import JWTError, jwt
 except ImportError:  # pragma: no cover - exercised only without optional dependency
-    JWTError = Exception
+    class JWTError(Exception):
+        pass
+
     jwt = None
 
 try:
@@ -32,13 +35,26 @@ except ImportError:  # pragma: no cover - exercised only without optional depend
 
 ALGORITHM = "HS256"
 DEFAULT_TOKEN_HOURS = 24
+MIN_SECRET_LENGTH = 32
+_EPHEMERAL_DEMO_SECRET = secrets.token_urlsafe(48)
 _pwd_context = (
     CryptContext(schemes=["bcrypt"], deprecated="auto") if CryptContext is not None else None
 )
 
 
 def _secret_key() -> str:
-    return os.environ.get("JWT_SECRET_KEY", "luntiai-dev-secret-change-me")
+    configured = os.environ.get("JWT_SECRET_KEY", "").strip()
+    if configured:
+        if len(configured) < MIN_SECRET_LENGTH:
+            raise RuntimeError(f"JWT_SECRET_KEY must contain at least {MIN_SECRET_LENGTH} characters")
+        return configured
+
+    demo_mode = os.environ.get("LUNTIAI_DEMO_MODE", "").strip().lower()
+    if demo_mode in {"1", "true", "yes", "on"}:
+        # Unpredictable and never persisted. Sessions expire on container restart.
+        return _EPHEMERAL_DEMO_SECRET
+
+    raise RuntimeError("JWT_SECRET_KEY is required when LUNTIAI_DEMO_MODE is disabled")
 
 
 def hash_password(plain: str) -> str:
@@ -97,15 +113,28 @@ def _fallback_jwt_decode(token: str) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
 
+    try:
+        header = json.loads(_b64url_decode(header_part))
+    except (binascii.Error, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+    if header != {"alg": ALGORITHM, "typ": "JWT"}:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
     signing_input = f"{header_part}.{payload_part}".encode("ascii")
     expected_signature = hmac.new(
         _secret_key().encode("utf-8"), signing_input, hashlib.sha256
     ).digest()
-    actual_signature = _b64url_decode(signature_part)
+    try:
+        actual_signature = _b64url_decode(signature_part)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
     if not hmac.compare_digest(actual_signature, expected_signature):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    payload = json.loads(_b64url_decode(payload_part))
+    try:
+        payload = json.loads(_b64url_decode(payload_part))
+    except (binascii.Error, json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
     if int(payload.get("exp", 0)) < int(datetime.now(timezone.utc).timestamp()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
     return payload

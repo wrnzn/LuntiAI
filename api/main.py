@@ -57,14 +57,21 @@ app = FastAPI(
     docs_url="/docs",
 )
 
-# CORS — allow all origins for demo
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# The deployed frontend is same-origin. Explicitly list any additional trusted
+# frontend origins through LUNTIAI_CORS_ORIGINS.
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("LUNTIAI_CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
 # =============================================================================
 # Load Model
@@ -135,18 +142,18 @@ class PredictionRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    phone: str = Field(..., description="PH mobile number")
-    name: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=3, max_length=32)
+    display_name: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=8)
 
 
 class LoginRequest(BaseModel):
-    phone: str = Field(..., description="PH mobile number")
+    username: str = Field(..., min_length=3, max_length=32)
     password: str = Field(..., min_length=8)
 
 
 class UpdateMeRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=1)
+    display_name: Optional[str] = Field(None, min_length=1, max_length=50)
     password: Optional[str] = Field(None, min_length=8)
 
 
@@ -189,7 +196,7 @@ class PredictionResponse(BaseModel):
 # =============================================================================
 
 # OpenWeatherMap API key
-WEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "YOUR_API_KEY_HERE")
+WEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY") or None
 
 TREE_CROP_METADATA = {
     "Coconut": {
@@ -266,7 +273,7 @@ def _auth_response(user: dict) -> dict:
 @app.post("/register", response_model=AuthResponse)
 async def register(request: RegisterRequest):
     try:
-        user = database.create_user(request.phone, request.name, request.password)
+        user = database.create_user(request.username, request.display_name, request.password)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return _auth_response(user)
@@ -274,7 +281,7 @@ async def register(request: RegisterRequest):
 
 @app.post("/login", response_model=AuthResponse)
 async def login(request: LoginRequest):
-    user = database.authenticate_user(request.phone, request.password)
+    user = database.authenticate_user(request.username, request.password)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return _auth_response(user)

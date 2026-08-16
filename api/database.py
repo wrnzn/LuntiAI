@@ -14,16 +14,17 @@ from zoneinfo import ZoneInfo
 
 DB_PATH = os.environ.get(
     "LUNTIAI_DB_PATH",
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "users.db"),
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "instance", "users.db"),
 )
 
 FREE_DAILY_QUOTA = 3
 PROMO_CODE = "LUNTIAI2026"
 PHT = ZoneInfo("Asia/Manila")
-PHONE_RE = re.compile(r"^(?:\+63|63|0)9\d{9}$")
+USERNAME_RE = re.compile(r"^(?=.*[a-z])[a-z0-9][a-z0-9_-]{2,31}$")
 
 
 def _connect() -> sqlite3.Connection:
+    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -54,16 +55,14 @@ def _quota_resets_at() -> str:
     return datetime.combine(tomorrow, datetime.min.time(), tzinfo=PHT).isoformat()
 
 
-def normalize_phone(phone: str) -> str:
-    """Normalize PH mobile numbers to +639XXXXXXXXX."""
-    compact = re.sub(r"[\s-]", "", phone or "")
-    if not PHONE_RE.match(compact):
-        raise ValueError("Phone must be a valid PH mobile number")
-    if compact.startswith("+63"):
-        return compact
-    if compact.startswith("63"):
-        return f"+{compact}"
-    return f"+63{compact[1:]}"
+def normalize_username(username: str) -> str:
+    """Normalize a non-sensitive demo username."""
+    normalized = (username or "").strip().lower()
+    if not USERNAME_RE.fullmatch(normalized):
+        raise ValueError(
+            "Username must be 3-32 characters using letters, numbers, underscores, or hyphens"
+        )
+    return normalized
 
 
 def _row_to_user(row: Optional[sqlite3.Row]) -> Optional[dict[str, Any]]:
@@ -71,8 +70,8 @@ def _row_to_user(row: Optional[sqlite3.Row]) -> Optional[dict[str, Any]]:
         return None
     return {
         "id": row["id"],
-        "phone": row["phone"],
-        "name": row["name"],
+        "username": row["username"],
+        "display_name": row["display_name"],
         "tier": row["tier"],
         "query_count": row["query_count"],
         "query_date": row["query_date"],
@@ -81,9 +80,9 @@ def _row_to_user(row: Optional[sqlite3.Row]) -> Optional[dict[str, Any]]:
     }
 
 
-def _get_user_by_phone(phone: str) -> Optional[sqlite3.Row]:
+def _get_user_by_username(username: str) -> Optional[sqlite3.Row]:
     with _connection() as conn:
-        return conn.execute("SELECT * FROM users WHERE phone = ?", (phone,)).fetchone()
+        return conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
 
 
 def init_db() -> None:
@@ -92,8 +91,8 @@ def init_db() -> None:
             """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                phone TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                display_name TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
                 tier TEXT DEFAULT 'free',
                 query_count INTEGER DEFAULT 0,
@@ -121,13 +120,15 @@ def init_db() -> None:
         )
 
 
-def create_user(phone: str, name: str, password: str) -> dict[str, Any]:
+def create_user(username: str, display_name: str, password: str) -> dict[str, Any]:
     from auth import hash_password
 
-    normalized_phone = normalize_phone(phone)
-    clean_name = (name or "").strip()
-    if not clean_name:
-        raise ValueError("Name is required")
+    normalized_username = normalize_username(username)
+    clean_display_name = (display_name or "").strip()
+    if not clean_display_name:
+        raise ValueError("Display name is required")
+    if len(clean_display_name) > 50:
+        raise ValueError("Display name must contain at most 50 characters")
     if len(password or "") < 8:
         raise ValueError("Password must be at least 8 characters")
 
@@ -137,16 +138,23 @@ def create_user(phone: str, name: str, password: str) -> dict[str, Any]:
             cursor = conn.execute(
                 """
                 INSERT INTO users (
-                    phone, name, password_hash, tier, query_count,
+                    username, display_name, password_hash, tier, query_count,
                     query_date, created_at, updated_at
                 )
                 VALUES (?, ?, ?, 'free', 0, ?, ?, ?)
                 """,
-                (normalized_phone, clean_name, hash_password(password), _today_pht(), now, now),
+                (
+                    normalized_username,
+                    clean_display_name,
+                    hash_password(password),
+                    _today_pht(),
+                    now,
+                    now,
+                ),
             )
             user_id = cursor.lastrowid
     except sqlite3.IntegrityError as exc:
-        raise ValueError("Phone already registered") from exc
+        raise ValueError("Username already registered") from exc
 
     user = get_user(user_id)
     if user is None:
@@ -154,14 +162,14 @@ def create_user(phone: str, name: str, password: str) -> dict[str, Any]:
     return user
 
 
-def authenticate_user(phone: str, password: str) -> Optional[dict[str, Any]]:
+def authenticate_user(username: str, password: str) -> Optional[dict[str, Any]]:
     from auth import verify_password
 
     try:
-        normalized_phone = normalize_phone(phone)
+        normalized_username = normalize_username(username)
     except ValueError:
         return None
-    row = _get_user_by_phone(normalized_phone)
+    row = _get_user_by_username(normalized_username)
     if row is None or not verify_password(password, row["password_hash"]):
         return None
     return _row_to_user(row)
@@ -179,12 +187,14 @@ def update_user(user_id: int, fields: dict[str, Any]) -> dict[str, Any]:
     updates: list[str] = []
     values: list[Any] = []
 
-    if "name" in fields and fields["name"] is not None:
-        name = str(fields["name"]).strip()
-        if not name:
-            raise ValueError("Name is required")
-        updates.append("name = ?")
-        values.append(name)
+    if "display_name" in fields and fields["display_name"] is not None:
+        display_name = str(fields["display_name"]).strip()
+        if not display_name:
+            raise ValueError("Display name is required")
+        if len(display_name) > 50:
+            raise ValueError("Display name must contain at most 50 characters")
+        updates.append("display_name = ?")
+        values.append(display_name)
 
     if "password" in fields and fields["password"]:
         password = str(fields["password"])
